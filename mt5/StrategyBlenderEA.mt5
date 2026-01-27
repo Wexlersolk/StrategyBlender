@@ -1,0 +1,279 @@
+// StrategyBlender MetaTrader 5 Expert Advisor
+// This EA reads orders from a JSON file and executes them
+
+#property copyright "StrategyBlender"
+#property link      "https://github.com/yourusername/strategyblender"
+#property version   "1.00"
+#property description "Executes orders from StrategyBlender system"
+#property strict
+
+// Input parameters
+input string SignalFile = "MQL5/Files/strategyblender_orders.json";  // Orders file
+input string OutputFile = "MQL5/Files/strategyblender_signals.json"; // Signals file
+input int    CheckInterval = 1000;  // Check every 1 second (ms)
+
+// Global variables
+string lastOrderHash = "";
+datetime lastCheckTime = 0;
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   Print("StrategyBlender EA initialized");
+   Print("Signal File: ", SignalFile);
+   Print("Output File: ", OutputFile);
+   
+   // Create directory if it doesn't exist
+   string directory = StringSubstr(SignalFile, 0, StringFind(SignalFile, "\\", 0));
+   if(!FolderCreate(directory, FILE_COMMON))
+   {
+      Print("Warning: Could not create directory: ", directory);
+   }
+   
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   Print("StrategyBlender EA deinitialized");
+}
+
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // Check for new orders every CheckInterval milliseconds
+   if(GetTickCount() - lastCheckTime > CheckInterval)
+   {
+      lastCheckTime = GetTickCount();
+      CheckForOrders();
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Check for new orders in the JSON file                            |
+//+------------------------------------------------------------------+
+void CheckForOrders()
+{
+   int file_handle = FileOpen(SignalFile, FILE_READ|FILE_TXT|FILE_ANSI|FILE_COMMON);
+   
+   if(file_handle == INVALID_HANDLE)
+   {
+      // File doesn't exist yet, that's OK
+      return;
+   }
+   
+   string content = "";
+   while(!FileIsEnding(file_handle))
+   {
+      content += FileReadString(file_handle) + "\n";
+   }
+   FileClose(file_handle);
+   
+   // Parse JSON
+   if(content == "")
+      return;
+   
+   string currentHash = IntegerToString(StringGetHash(content));
+   
+   // Check if file has changed
+   if(currentHash == lastOrderHash)
+      return;
+   
+   lastOrderHash = currentHash;
+   
+   // Parse and execute orders
+   ExecuteOrders(content);
+}
+
+//+------------------------------------------------------------------+
+//| Execute orders from JSON content                                 |
+//+------------------------------------------------------------------+
+void ExecuteOrders(string jsonContent)
+{
+   // Simple JSON parsing (for MQL5, consider using a proper JSON library)
+   int orderStart = StringFind(jsonContent, "\"orders\"");
+   if(orderStart == -1)
+      return;
+   
+   // Extract orders array
+   string ordersStr = StringSubstr(jsonContent, orderStart);
+   int arrayStart = StringFind(ordersStr, "[");
+   int arrayEnd = StringFind(ordersStr, "]");
+   
+   if(arrayStart == -1 || arrayEnd == -1)
+      return;
+   
+   string ordersArray = StringSubstr(ordersStr, arrayStart + 1, arrayEnd - arrayStart - 1);
+   
+   // Split orders
+   string orders[];
+   int count = StringSplit(ordersArray, '}', orders);
+   
+   for(int i = 0; i < count; i++)
+   {
+      if(StringTrim(orders[i]) == "" || StringTrim(orders[i]) == ",")
+         continue;
+      
+      // Parse order (simplified - you'd want a proper JSON parser)
+      string symbol = ExtractValue(orders[i], "symbol");
+      string action = ExtractValue(orders[i], "action");
+      double volume = StringToDouble(ExtractValue(orders[i], "volume"));
+      double price = StringToDouble(ExtractValue(orders[i], "price"));
+      string orderId = ExtractValue(orders[i], "order_id");
+      
+      if(symbol == "" || action == "")
+         continue;
+      
+      // Execute order
+      bool success = ExecuteOrder(symbol, action, volume, price, orderId);
+      
+      // Update order status in file
+      UpdateOrderStatus(orderId, success ? "executed" : "failed");
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Execute a single order                                           |
+//+------------------------------------------------------------------+
+bool ExecuteOrder(string symbol, string action, double volume, double price, string orderId)
+{
+   // Normalize symbol name
+   symbol = NormalizeSymbol(symbol);
+   
+   // Select symbol
+   if(!SymbolSelect(symbol, true))
+   {
+      Print("Error: Symbol ", symbol, " not found");
+      return false;
+   }
+   
+   // Prepare trade request
+   MqlTradeRequest request = {};
+   MqlTradeResult result = {};
+   
+   ZeroMemory(request);
+   ZeroMemory(result);
+   
+   request.action = TRADE_ACTION_DEAL;
+   request.symbol = symbol;
+   request.volume = volume;
+   request.deviation = 10;
+   request.magic = 234000;
+   request.comment = "StrategyBlender: " + orderId;
+   request.type_filling = ORDER_FILLING_IOC;
+   
+   if(action == "buy")
+   {
+      request.type = ORDER_TYPE_BUY;
+      request.price = SymbolInfoDouble(symbol, SYMBOL_ASK);
+      request.tp = price > 0 ? price * 1.005 : 0;  // 0.5% take profit if price specified
+   }
+   else if(action == "sell")
+   {
+      request.type = ORDER_TYPE_SELL;
+      request.price = SymbolInfoDouble(symbol, SYMBOL_BID);
+      request.tp = price > 0 ? price * 0.995 : 0;  // 0.5% take profit if price specified
+   }
+   else
+   {
+      Print("Error: Unknown action: ", action);
+      return false;
+   }
+   
+   // Send order
+   bool success = OrderSend(request, result);
+   
+   if(success)
+   {
+      Print("Order executed: ", symbol, " ", action, " ", volume, 
+            " @ ", DoubleToString(result.price, 5),
+            " Ticket: ", result.order);
+      return true;
+   }
+   else
+   {
+      Print("Order failed: ", symbol, " ", action, 
+            " Error: ", GetLastError());
+      return false;
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Update order status in output file                               |
+//+------------------------------------------------------------------+
+void UpdateOrderStatus(string orderId, string status)
+{
+   // Read existing signals
+   string signalsFile = OutputFile;
+   string signalsContent = "";
+   
+   int file_handle = FileOpen(signalsFile, FILE_READ|FILE_TXT|FILE_ANSI|FILE_COMMON);
+   if(file_handle != INVALID_HANDLE)
+   {
+      while(!FileIsEnding(file_handle))
+      {
+         signalsContent += FileReadString(file_handle) + "\n";
+      }
+      FileClose(file_handle);
+   }
+   
+   // Add new signal
+   string newSignal = StringFormat(
+      "{\"order_id\": \"%s\", \"status\": \"%s\", \"timestamp\": \"%s\"}",
+      orderId, status, TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)
+   );
+   
+   // Write back to file
+   file_handle = FileOpen(signalsFile, FILE_WRITE|FILE_TXT|FILE_ANSI|FILE_COMMON);
+   if(file_handle != INVALID_HANDLE)
+   {
+      FileWrite(file_handle, "{\"signals\": [", newSignal, "]}");
+      FileClose(file_handle);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Helper: Extract value from JSON string                           |
+//+------------------------------------------------------------------+
+string ExtractValue(string json, string key)
+{
+   int keyPos = StringFind(json, "\"" + key + "\"");
+   if(keyPos == -1)
+      return "";
+   
+   int colonPos = StringFind(json, ":", keyPos);
+   int valueStart = StringFind(json, "\"", colonPos + 1);
+   int valueEnd = StringFind(json, "\"", valueStart + 1);
+   
+   if(valueStart == -1 || valueEnd == -1)
+      return "";
+   
+   return StringSubstr(json, valueStart + 1, valueEnd - valueStart - 1);
+}
+
+//+------------------------------------------------------------------+
+//| Helper: Normalize symbol name                                    |
+//+------------------------------------------------------------------+
+string NormalizeSymbol(string symbol)
+{
+   // Remove any prefixes/suffixes that MT5 might not like
+   symbol = StringTrim(symbol);
+   
+   // Common forex symbols
+   string forexSymbols[] = {"EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD"};
+   
+   for(int i = 0; i < ArraySize(forexSymbols); i++)
+   {
+      if(StringFind(symbol, forexSymbols[i]) != -1)
+         return forexSymbols[i];
+   }
+   
+   return symbol;
+}
