@@ -9,8 +9,17 @@ class MT5Fetcher:
     def __init__(self):
         if not mt5.initialize(path=settings.MT5_PATH):
             raise Exception("MT5 initialization failed")
-        # optional login
-        # mt5.login(login=settings.MT5_LOGIN, password=settings.MT5_PASSWORD, server=settings.MT5_SERVER)
+        
+        # Login if credentials are provided
+        if settings.MT5_LOGIN != 0 and settings.MT5_PASSWORD and settings.MT5_SERVER:
+            authorized = mt5.login(
+                login=settings.MT5_LOGIN,
+                password=settings.MT5_PASSWORD,
+                server=settings.MT5_SERVER
+            )
+            if not authorized:
+                error = mt5.last_error()
+                raise Exception(f"MT5 login failed: {error}")
 
     def fetch_historical(self, symbol, timeframe=mt5.TIMEFRAME_D1, 
                          start_date=None, end_date=None):

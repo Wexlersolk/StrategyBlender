@@ -1,0 +1,8 @@
+.envrc
+.env 
+personal.txt
+.envrc
+.env
+*.pth
+__pycache__/
+*.db

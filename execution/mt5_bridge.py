@@ -7,8 +7,17 @@ class MT5Bridge:
     def __init__(self):
         if not mt5.initialize(path=settings.MT5_PATH):
             raise Exception("MT5 init failed")
-        # optional login
-        # mt5.login(...)
+        
+        # Login if credentials are provided
+        if settings.MT5_LOGIN != 0 and settings.MT5_PASSWORD and settings.MT5_SERVER:
+            authorized = mt5.login(
+                login=settings.MT5_LOGIN,
+                password=settings.MT5_PASSWORD,
+                server=settings.MT5_SERVER
+            )
+            if not authorized:
+                error = mt5.last_error()
+                raise Exception(f"MT5 login failed: {error}")
     
     def set_global_variable(self, name, value):
         """Set a MT5 global variable (double)."""
