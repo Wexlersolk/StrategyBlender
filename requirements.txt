@@ -1,0 +1,10 @@
+pandas
+numpy
+pytorch
+learn2learn
+ta-lib
+pyyaml
+MetaTrader5
+schedule
+influxdb-client  # optional
+streamlit        # optional
