@@ -41,9 +41,11 @@ SYMBOLS_CONFIG = os.getenv("SYMBOLS_CONFIG", "config/symbols.yaml")
 
 # -------------------- Risk & Execution --------------------
 PARAMETER_BOUNDS = {
-    "lot_size": (0.01, 1.0),
-    "sl_atr": (1.0, 5.0),
-    "tp_atr": (1.0, 10.0),
-    "rsi_period": (7, 21)
+    "mmLots":           (1.0,  45.0),
+    "StopLossCoef1":    (1.0,   5.0),
+    "ProfitTargetCoef1":(1.0,  10.0),
+    "StopLossCoef2":    (1.0,   5.0),
+    "ProfitTargetCoef2":(1.0,  10.0),
+    "TrailingActCef1":  (0.5,   3.0),
 }
 MAX_DRAWDOWN_PERCENT = float(os.getenv("MAX_DRAWDOWN_PERCENT", 0.15))

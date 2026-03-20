@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from data.features import get_feature_columns
+import config.settings as settings
 
 
 def extract_features_from_task(task, mode='support', symbol=None):
@@ -32,15 +33,22 @@ def compute_sharpe(returns: np.ndarray) -> float:
     return float(mean_r / std_r * np.sqrt(252))
 
 
-def simulate_returns(query_data: dict, lot_size: float,
-                     sl_atr: float, tp_atr: float) -> np.ndarray:
+def simulate_returns(query_data: dict, validated: dict) -> np.ndarray:
     """
     Simple vectorised simulation on query data.
-    For each bar: if close > previous close → long, else short.
-    P&L scaled by lot_size; position closed at SL or TP based on ATR multiples.
-    Returns a 1-D numpy array of per-bar returns.
+    Uses whatever SL/PT coefficient keys exist in validated params.
     """
     all_returns = []
+
+    # Get the first SL and PT coef values available — works with any param names
+    param_names = list(validated.keys())
+    sl_keys = [k for k in param_names if 'sl' in k.lower() or 'stop' in k.lower()]
+    pt_keys = [k for k in param_names if 'pt' in k.lower() or 'profit' in k.lower() or 'target' in k.lower()]
+    lot_keys = [k for k in param_names if 'lot' in k.lower()]
+
+    sl_coef  = validated[sl_keys[0]]  if sl_keys  else 2.0
+    pt_coef  = validated[pt_keys[0]]  if pt_keys  else 3.0
+    lot_size = validated[lot_keys[0]] if lot_keys else 1.0
 
     for sym, df in query_data.items():
         if df.empty or 'returns' not in df.columns or 'atr' not in df.columns:
@@ -55,11 +63,10 @@ def simulate_returns(query_data: dict, lot_size: float,
             atr       = atrs[i] if atrs[i] > 0 else 1e-8
             price     = closes[i - 1] if closes[i - 1] > 0 else 1.0
 
-            sl_dist = sl_atr * atr / price   # as fraction of price
-            tp_dist = tp_atr * atr / price
+            sl_dist = sl_coef * atr / price
+            tp_dist = pt_coef * atr / price
 
             raw_ret = returns[i] * direction
-            # Clip at SL/TP
             raw_ret = max(-sl_dist, min(tp_dist, raw_ret))
             all_returns.append(raw_ret * lot_size)
 
@@ -78,19 +85,14 @@ def compute_loss_on_task(model, task, mode='support'):
     x = extract_features_from_task(task, mode)
     raw_params = model(x)  # shape (4,) — raw unbounded outputs
 
-    # Build validated (scaled) param dict — keeps torch tensors where possible
-    param_names = ['lot_size', 'sl_atr', 'tp_atr', 'rsi_period']
+    # Build validated (scaled) param dict — use names from settings
+    param_names = list(settings.PARAMETER_BOUNDS.keys())
     params_dict = {name: raw_params[i] for i, name in enumerate(param_names)}
     validated = validate_parameters({k: v.item() for k, v in params_dict.items()})
 
     # Simulate on the requested data split
     data = task[mode]
-    returns_arr = simulate_returns(
-        data,
-        lot_size=validated['lot_size'],
-        sl_atr=validated['sl_atr'],
-        tp_atr=validated['tp_atr'],
-    )
+    returns_arr = simulate_returns(data, validated)
 
     sharpe_val = compute_sharpe(returns_arr)
 

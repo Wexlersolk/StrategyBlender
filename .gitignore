@@ -7,3 +7,6 @@ venv311/
 *.pth
 __pycache__/
 *.db
+
+market_data.db
+  meta_weights.pth
