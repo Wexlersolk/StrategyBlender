@@ -5,6 +5,7 @@ from meta_learning.maml import create_maml_model
 from meta_learning.adapt import compute_loss_on_task
 import config.settings as settings
 
+
 def train_meta(tasks, input_dim, output_dim, device='cpu'):
     """
     Meta-training loop using MAML.
@@ -12,34 +13,59 @@ def train_meta(tasks, input_dim, output_dim, device='cpu'):
     """
     maml = create_maml_model(input_dim, output_dim, inner_lr=settings.INNER_LEARNING_RATE)
     maml.to(device)
+
     meta_optimizer = optim.Adam(maml.parameters(), lr=settings.META_LEARNING_RATE)
-    
+
     num_tasks = len(tasks)
+    if num_tasks == 0:
+        raise ValueError("No tasks available for training. Run update_data.py first.")
+
+    batch_size = min(settings.META_BATCH_SIZE, num_tasks)
+
     for iteration in range(settings.NUM_ITERATIONS):
         meta_optimizer.zero_grad()
-        
+
         # Sample a batch of tasks
-        task_indices = np.random.choice(num_tasks, size=settings.META_BATCH_SIZE, replace=False)
-        meta_loss = 0.0
-        
+        task_indices = np.random.choice(num_tasks, size=batch_size, replace=False)
+        meta_loss = torch.tensor(0.0, requires_grad=False)
+        valid_tasks = 0
+
         for idx in task_indices:
             task = tasks[idx]
-            # Clone model for this task
-            learner = maml.clone()
-            # Inner loop: adapt on support set
-            support_loss = compute_loss_on_task(learner, task, mode='support')
-            learner.adapt(support_loss)
-            # Outer loss on query set
-            query_loss = compute_loss_on_task(learner, task, mode='query')
-            meta_loss += query_loss
-        
-        meta_loss /= settings.META_BATCH_SIZE
-        meta_loss.backward()
-        meta_optimizer.step()
-        
+            try:
+                # Clone model for this task (inner loop)
+                learner = maml.clone()
+
+                # Inner loop: adapt on support set
+                support_loss = compute_loss_on_task(learner, task, mode='support')
+                learner.adapt(support_loss)
+
+                # Outer loss on query set
+                query_loss = compute_loss_on_task(learner, task, mode='query')
+                meta_loss = meta_loss + query_loss
+                valid_tasks += 1
+
+            except Exception as e:
+                print(f"Warning: skipping task {idx}: {e}")
+                continue
+
+        if valid_tasks == 0:
+            print(f"Iteration {iteration}: no valid tasks, skipping")
+            continue
+
+        meta_loss = meta_loss / valid_tasks
+
+        # Only backprop if loss has a grad_fn
+        if meta_loss.requires_grad:
+            meta_loss.backward()
+            meta_optimizer.step()
+
         if iteration % 100 == 0:
-            print(f"Iteration {iteration}, meta loss: {meta_loss.item()}")
-    
+            print(f"Iteration {iteration}/{settings.NUM_ITERATIONS}, "
+                  f"meta loss: {meta_loss.item():.4f}, "
+                  f"valid tasks: {valid_tasks}/{batch_size}")
+
     # Save final model
     torch.save(maml.state_dict(), settings.MODEL_SAVE_PATH)
+    print(f"Model saved to {settings.MODEL_SAVE_PATH}")
     return maml

@@ -2,12 +2,12 @@ symbols:
   - name: XAUUSD
     tradable: true
     lot_step: 0.01
-  - name: HK50
+  - name: HK50.cash
     tradable: true
     lot_step: 0.1
   - name: USDJPY
     tradable: true
     lot_step: 0.01
-  - name: US30
+  - name: US30.cash
     tradable: true
     lot_step: 0.1

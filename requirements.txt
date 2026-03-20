@@ -1,10 +1,10 @@
 pandas
 numpy
-pytorch
+torch
 learn2learn
 ta-lib
 pyyaml
-MetaTrader5
+mt5linux
 schedule
-influxdb-client  # optional
-streamlit        # optional
+influxdb-client
+streamlit

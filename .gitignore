@@ -1,6 +1,7 @@
 .envrc
 .env 
 personal.txt
+venv311/
 .envrc
 .env
 *.pth
