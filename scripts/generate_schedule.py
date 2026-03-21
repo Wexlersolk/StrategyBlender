@@ -1,185 +1,142 @@
 """
-generate_schedule.py
-
-Runs the trained MAML model over each calendar month in the historical
-database and writes a CSV like:
-
-    date,mmLots,StopLossCoef1,ProfitTargetCoef1,...
-    2020-01-01,32.1,2.3,4.1,...
-    2020-02-01,28.5,1.9,3.8,...
-
-The CSV is then placed in MT5's Files directory so the modified EA can
-read it during a backtest.
+generate_schedule.py — compatible with new RegimeModel checkpoint format
 """
-
 import sys
 sys.path.append('.')
 
-import os
-import csv
-import datetime
+import os, csv, yaml, datetime
+import numpy as np
 import torch
-import yaml
+import torch.nn as nn
 
 from data.storage import DataStorage
-from data.features import compute_features, get_feature_columns
-from meta_learning.maml import create_maml_model
-from meta_learning.adapt import extract_features_from_task
-from execution.parameter_validator import validate_parameters
+from data.features import compute_features
 import config.settings as settings
 
 
-# --------------------------------------------------------------------------- #
-# Config
-# --------------------------------------------------------------------------- #
+class RegimeModel(nn.Module):
+    def __init__(self, input_dim, output_dim, hidden_dims=[32, 16]):
+        super().__init__()
+        layers = []
+        prev = input_dim
+        for h in hidden_dims:
+            layers.append(nn.Linear(prev, h))
+            layers.append(nn.Tanh())
+            prev = h
+        layers.append(nn.Linear(prev, output_dim))
+        self.net = nn.Sequential(*layers)
 
-# Where to write the CSV.  Copy this path into the EA (see MQL5 code).
+    def forward(self, x):
+        return torch.sigmoid(self.net(x))
+
+
 OUTPUT_CSV = os.path.expanduser(
     "~/.wine/drive_c/users/wexlersolk/AppData/Roaming/MetaQuotes/"
     "Terminal/Common/Files/ml_params_schedule.csv"
 )
 
-# How many days of history to feed the model each month (support window)
-SUPPORT_DAYS = settings.SUPPORT_SIZE
 
-
-# --------------------------------------------------------------------------- #
-# Helpers
-# --------------------------------------------------------------------------- #
-
-def month_range(start: datetime.date, end: datetime.date):
-    """Yield the first day of every month between start and end."""
+def month_range(start, end):
     current = start.replace(day=1)
     while current <= end:
         yield current
-        # advance one month
         if current.month == 12:
             current = current.replace(year=current.year + 1, month=1)
         else:
             current = current.replace(month=current.month + 1)
 
 
-def load_model(input_dim, output_dim):
-    maml = create_maml_model(input_dim, output_dim,
-                             inner_lr=settings.INNER_LEARNING_RATE)
-    maml.load_state_dict(
-        torch.load(settings.MODEL_SAVE_PATH, map_location='cpu')
-    )
-    maml.eval()
-    return maml
+def extract_features(df, feature_cols):
+    if df.empty:
+        return np.zeros(len(feature_cols))
+    feats = df[feature_cols].mean().values.astype(np.float32)
+    std = feats.std()
+    if std > 1e-8:
+        feats = (feats - feats.mean()) / std
+    return feats
 
-
-# --------------------------------------------------------------------------- #
-# Main
-# --------------------------------------------------------------------------- #
 
 def main():
-    # Load symbols
-    with open(settings.SYMBOLS_CONFIG, 'r') as f:
-        cfg = yaml.safe_load(f)
-    symbols = [s['name'] for s in cfg['symbols'] if s.get('tradable', True)]
+    ckpt = torch.load(settings.MODEL_SAVE_PATH, map_location='cpu')
+
+    if 'model_state' not in ckpt:
+        print("ERROR: old model format. Run: python scripts/train_meta.py")
+        return
+
+    model = RegimeModel(ckpt['input_dim'], ckpt['output_dim'])
+    model.load_state_dict(ckpt['model_state'])
+    model.eval()
+
+    base_params   = ckpt['base_params']
+    scale_bounds  = ckpt['scale_bounds']
+    param_names   = ckpt['param_names']
+    symbols       = ckpt['symbols']
+    feature_cols  = ckpt['feature_cols']
+
+    print(f"Model loaded | symbols: {symbols} | params: {param_names}")
 
     storage = DataStorage()
-    feature_cols = get_feature_columns()
-    param_names  = list(settings.PARAMETER_BOUNDS.keys())
-
-    input_dim  = len(feature_cols) * len(symbols)
-    output_dim = len(param_names)
-
-    model = load_model(input_dim, output_dim)
-
-    # Determine date range from DB
-    # Load all data once and find common date range
-    print("Loading historical data...")
     all_data = {}
     for sym in symbols:
         df = storage.load_bars(sym)
         if not df.empty:
             df = compute_features(df)
-            if not df.empty:
-                all_data[sym] = df
+            all_data[sym] = df
 
     if not all_data:
-        print("No data found. Run scripts/update_data.py first.")
+        print("No market data. Run scripts/update_data.py first.")
         return
 
-    available_symbols = list(all_data.keys())
-    print(f"Using symbols: {available_symbols}")
-
-    # Find intersection of dates
-    dates = None
-    for sym, df in all_data.items():
-        d = set(df.index)
-        dates = d if dates is None else dates.intersection(d)
-    dates = sorted(dates)
-
-    if len(dates) < SUPPORT_DAYS + 1:
-        print(f"Not enough data. Need at least {SUPPORT_DAYS + 1} aligned days.")
-        return
-
-    start_date = dates[SUPPORT_DAYS].date()   # first month we can compute
-    end_date   = dates[-1].date()
-
-    print(f"Generating schedule from {start_date} to {end_date} ...")
+    all_dates = sorted({d.date() for df in all_data.values() for d in df.index})
+    start_date, end_date = all_dates[0], all_dates[-1]
+    print(f"Generating schedule: {start_date} → {end_date}")
 
     rows = []
-
     for month_start in month_range(start_date, end_date):
-        # Find the last SUPPORT_DAYS trading days BEFORE this month
-        month_dt = datetime.datetime.combine(month_start, datetime.time.min)
-        prior_dates = [d for d in dates if d < month_dt]
+        month_dt    = datetime.datetime.combine(month_start, datetime.time.min)
+        prior_start = month_dt - datetime.timedelta(days=60)
+        prior_end   = month_dt
 
-        if len(prior_dates) < SUPPORT_DAYS:
-            print(f"  {month_start}: not enough prior data, skipping")
+        feats_list = []
+        for sym, df in all_data.items():
+            mask = (df.index >= prior_start) & (df.index < prior_end)
+            feats_list.append(extract_features(df[mask], feature_cols))
+
+        if not feats_list:
             continue
 
-        support_dates = prior_dates[-SUPPORT_DAYS:]
-
-        # Build task support dict
-        support = {}
-        for sym in available_symbols:
-            df_sym = all_data[sym]
-            slice_df = df_sym[df_sym.index.isin(support_dates)]
-            if not slice_df.empty:
-                support[sym] = slice_df
-
-        if not support:
+        features = np.concatenate(feats_list)
+        if np.any(~np.isfinite(features)):
             continue
 
-        task = {'support': support, 'query': {}}
-
-        # Forward pass
-        x = extract_features_from_task(task, mode='support')
+        x = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
         with torch.no_grad():
-            raw_params = model(x).numpy()
+            scales = model(x).squeeze(0).numpy()
 
-        params_dict = {name: raw_params[i] for i, name in enumerate(param_names)}
-        validated   = validate_parameters(params_dict)
+        final_params = {}
+        for j, name in enumerate(param_names):
+            lo, hi = scale_bounds[name]
+            scale = lo + scales[j] * (hi - lo)
+            final_params[name] = round(base_params[name] * scale, 4)
 
         row = {'date': month_start.strftime('%Y.%m.%d')}
-        row.update({k: round(v, 4) for k, v in validated.items()})
+        row.update(final_params)
         rows.append(row)
-
-        print(f"  {month_start}: {validated}")
+        print(f"  {month_start}: lots={final_params['mmLots']:.1f}  "
+              f"SL1={final_params['StopLossCoef1']:.2f}  "
+              f"PT1={final_params['ProfitTargetCoef1']:.2f}")
 
     if not rows:
         print("No rows generated.")
         return
 
-    # Write CSV
     os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
-    fieldnames = ['date'] + param_names
-
     with open(OUTPUT_CSV, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=['date'] + param_names)
         writer.writeheader()
         writer.writerows(rows)
 
-    print(f"\nSchedule written to: {OUTPUT_CSV}")
-    print(f"Total months: {len(rows)}")
-    print("\nFirst few rows:")
-    for r in rows[:3]:
-        print(" ", r)
+    print(f"\nWritten: {OUTPUT_CSV}  ({len(rows)} months)")
 
 
 if __name__ == '__main__':

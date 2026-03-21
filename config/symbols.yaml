@@ -1,13 +1,10 @@
 symbols:
-  - name: XAUUSD
-    tradable: true
-    lot_step: 0.01
   - name: HK50.cash
     tradable: true
     lot_step: 0.1
+  - name: XAUUSD
+    tradable: false    # ← set tradable: false to exclude
   - name: USDJPY
-    tradable: true
-    lot_step: 0.01
+    tradable: false
   - name: US30.cash
-    tradable: true
-    lot_step: 0.1
+    tradable: false

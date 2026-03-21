@@ -21,7 +21,7 @@ def main():
     # To avoid duplicates, you might fetch from last stored date to now.
     # Simplified: fetch last 365 days and store (append mode will handle duplicates if index is time)
     end = datetime.now()
-    start = end - timedelta(days=365)
+    start = end - timedelta(days=365*6)
     
     for sym in symbols:
         print(f"Fetching {sym}...")
