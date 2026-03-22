@@ -1,4 +1,5 @@
 .envrc
+.gitignore
 .env 
 personal.txt
 venv311/
@@ -11,3 +12,4 @@ __pycache__/
 market_data.db
 meta_weights.pth
 Reports/
+reports/

@@ -3,8 +3,8 @@ symbols:
     tradable: true
     lot_step: 0.1
   - name: XAUUSD
-    tradable: false    # ← set tradable: false to exclude
+    tradable: true  
   - name: USDJPY
-    tradable: false
+    tradable: true
   - name: US30.cash
-    tradable: false
+    tradable: true
