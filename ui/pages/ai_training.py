@@ -99,7 +99,7 @@ def _render_train_tab(results: dict, eas: dict):
 
     with col_opt:
         opt_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "data", "optimizer_results.csv"
+            os.path.dirname(__file__), "..", "..", "data", "exports", "optimizer_results.csv"
         )
         opt_exists = os.path.exists(opt_path)
         if opt_exists:
@@ -375,7 +375,7 @@ def _parse_optimizer_upload(opt_file):
 
         param_cols = detect_param_columns(df)
         os.makedirs("data", exist_ok=True)
-        df.to_csv("data/optimizer_results.csv", index=False)
+        df.to_csv("data/exports/optimizer_results.csv", index=False)
 
         st.success(
             f"Parsed {len(df)} parameter combinations. "

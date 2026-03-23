@@ -8,8 +8,8 @@ Structure:
         ...
 
 Output:
-    data/backtest_monthly.csv
-    data/backtest_deals.csv
+    data/exports/backtest_monthly.csv
+    data/exports/backtest_deals.csv
 """
 
 import sys, os, glob
@@ -171,8 +171,8 @@ def main():
     combined_deals   = pd.concat(all_deals)
 
     os.makedirs('data', exist_ok=True)
-    combined_monthly.to_csv('data/backtest_monthly.csv', index=False)
-    combined_deals.to_csv('data/backtest_deals.csv')
+    combined_monthly.to_csv('data/exports/backtest_monthly.csv', index=False)
+    combined_deals.to_csv('data/exports/backtest_deals.csv')
 
     print(f"\n{'─'*60}")
     print(f"SUMMARY")
@@ -181,7 +181,7 @@ def main():
     print(f"\nTotal months : {len(combined_monthly)}")
     print(f"Total deals  : {len(combined_deals)}")
     print(f"Sharpe range : {combined_monthly['sharpe'].min():.2f} to {combined_monthly['sharpe'].max():.2f}")
-    print(f"\nSaved to data/backtest_monthly.csv and data/backtest_deals.csv")
+    print(f"\nSaved to data/exports/backtest_monthly.csv and data/exports/backtest_deals.csv")
 
     print(f"\nSample (first 8 rows):")
     cols = ['year_month','report','sharpe','total_profit','num_trades','mmLots','SL1','PT1']

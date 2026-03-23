@@ -5,7 +5,7 @@ Parses MT5 optimizer results XML (Excel XML format).
 Saved from MT5: right-click Optimization Results → Save.
 
 Output:
-    data/optimizer_results.csv  — all parameter sets with their metrics
+    data/exports/optimizer_results.csv  — all parameter sets with their metrics
 
 How it's used for training:
     Each parameter set has an overall Sharpe ratio.
@@ -121,8 +121,8 @@ def main():
     print(f"Profit range: ${df['Profit'].min():,.0f} — ${df['Profit'].max():,.0f}")
 
     os.makedirs('data', exist_ok=True)
-    df.to_csv('data/optimizer_results.csv', index=False)
-    print(f"\nSaved: data/optimizer_results.csv")
+    df.to_csv('data/exports/optimizer_results.csv', index=False)
+    print(f"\nSaved: data/exports/optimizer_results.csv")
 
     print("\nTop 5 by Sharpe:")
     show_cols = ['Pass', 'Sharpe_Ratio', 'Profit', 'Equity_DD_%'] + param_cols[:4]

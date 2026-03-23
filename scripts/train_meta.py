@@ -89,7 +89,7 @@ def sharpe_to_scale(sharpe: float, sharpe_min: float, sharpe_max: float) -> floa
 
 # ── Data source 1: HTML backtest reports ──────────────────────────────────────
 
-def load_monthly_from_reports(reports_path: str = 'data/backtest_monthly.csv') -> pd.DataFrame:
+def load_monthly_from_reports(reports_path: str = 'data/exports/backtest_monthly.csv') -> pd.DataFrame:
     if not os.path.exists(reports_path):
         return pd.DataFrame()
     df = pd.read_csv(reports_path)
@@ -99,7 +99,7 @@ def load_monthly_from_reports(reports_path: str = 'data/backtest_monthly.csv') -
 
 # ── Data source 2: Optimizer XML results ─────────────────────────────────────
 
-def load_optimizer_results(opt_path: str = 'data/optimizer_results.csv') -> pd.DataFrame:
+def load_optimizer_results(opt_path: str = 'data/exports/optimizer_results.csv') -> pd.DataFrame:
     if not os.path.exists(opt_path):
         # Also try root level XML files
         xmls = list(__import__('pathlib').Path('.').glob('*.xml'))
