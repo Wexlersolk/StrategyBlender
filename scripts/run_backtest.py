@@ -1,12 +1,8 @@
 """
 scripts/run_backtest.py
 
-Quick demo of the Python backtesting engine.
-Run this to verify everything works:
-
-    cd ~/ZU/Practice/StrategyBlender
-    source venv311/bin/activate
-    python scripts/run_backtest.py
+Demo of the Python backtesting engine with intra-bar simulation.
+Run with: python scripts/run_backtest.py
 """
 
 import sys
@@ -18,48 +14,56 @@ from strategies.strategy_1_3_45 import Strategy_1_3_45
 
 
 def main():
-    print("Loading HK50.cash data...")
-    df = load_bars("HK50.cash", timeframe="H1")
+    print("Loading HK50.cash H1 data...")
+    df = load_bars('HK50.cash', 'H1')
     print(f"Loaded {len(df)} bars from {df.index[0].date()} to {df.index[-1].date()}")
 
-    # ── Basic backtest ────────────────────────────────────────────────────────
-    print("\nRunning backtest...")
-    bt     = Backtester(
-        initial_capital    = 100_000,
-        commission_per_lot = 0.0,
-        lot_value          = 0.1285,   # HK50 approx lot value in USD
-        verbose            = False,
-    )
-    strat   = Strategy_1_3_45()
-    results = bt.run(strat, df, date_from="2020-06-01", date_to="2026-01-01")
-    results.print_summary()
+    # ── Standard OHLC (fast) ──────────────────────────────────────────────────
+    print("\n--- Standard OHLC (1 step per bar) ---")
+    bt_std  = Backtester(initial_capital=100_000, lot_value=0.1285,
+                          intrabar_steps=1)
+    r_std   = bt_std.run(Strategy_1_3_45(), df.copy(),
+                          date_from="2020-06-01", date_to="2025-12-31")
+    r_std.print_summary()
 
-    # ── Monte Carlo ───────────────────────────────────────────────────────────
-    if results.n_trades >= 10:
-        print("Running Monte Carlo (1000 simulations)...")
+    # ── Intra-bar simulation (more accurate) ──────────────────────────────────
+    print("\n--- Intra-bar simulation (60 steps per bar) ---")
+    bt_ib   = Backtester(initial_capital=100_000, lot_value=0.1285,
+                          intrabar_steps=60, seed=42)
+    r_ib    = bt_ib.run(Strategy_1_3_45(), df.copy(),
+                         date_from="2020-06-01", date_to="2025-12-31")
+    r_ib.print_summary()
+
+    # ── Comparison ────────────────────────────────────────────────────────────
+    print("\n=== OHLC vs Intra-bar ===")
+    print(f"{'Metric':<22} {'OHLC':>10} {'Intra-bar':>10} {'Delta':>10}")
+    print("-" * 54)
+    rows = [
+        ("Net Profit",    f"${r_std.net_profit:,.0f}",
+                          f"${r_ib.net_profit:,.0f}",
+                          f"{r_ib.net_profit - r_std.net_profit:+,.0f}"),
+        ("Sharpe Ratio",  f"{r_std.sharpe_ratio:.3f}",
+                          f"{r_ib.sharpe_ratio:.3f}",
+                          f"{r_ib.sharpe_ratio - r_std.sharpe_ratio:+.3f}"),
+        ("Win Rate",      f"{r_std.win_rate*100:.1f}%",
+                          f"{r_ib.win_rate*100:.1f}%",
+                          f"{(r_ib.win_rate - r_std.win_rate)*100:+.1f}pp"),
+        ("Max Drawdown",  f"{r_std.max_drawdown[1]:.2f}%",
+                          f"{r_ib.max_drawdown[1]:.2f}%",
+                          f"{r_ib.max_drawdown[1] - r_std.max_drawdown[1]:+.2f}%"),
+        ("Total Trades",  str(r_std.n_trades),
+                          str(r_ib.n_trades), ""),
+    ]
+    for name, s, ib, d in rows:
+        print(f"{name:<22} {s:>10} {ib:>10} {d:>10}")
+
+    # ── Monte Carlo on intra-bar result ───────────────────────────────────────
+    if r_ib.n_trades >= 10:
+        print("\nRunning Monte Carlo on intra-bar results...")
         from research.monte_carlo import run_monte_carlo
-        mc = run_monte_carlo(results, n_simulations=1000)
+        mc = run_monte_carlo(r_ib, n_simulations=1000)
         mc.print_summary()
 
-    # ── Parameter search (small example) ─────────────────────────────────────
-    print("\nRunning mini parameter search (9 combinations)...")
-    from research.param_search import grid_search
-    search_results = grid_search(
-        Strategy_1_3_45,
-        df,
-        param_grid={
-            "StopLossCoef1":     [2.0, 2.5, 3.0],
-            "ProfitTargetCoef1": [2.0, 2.5, 3.0],
-        },
-        optimize_by = "sharpe_ratio",
-        date_from   = "2020-06-01",
-        date_to     = "2026-01-01",
-    )
-    if not search_results.empty:
-        cols = ["sharpe_ratio", "net_profit", "max_drawdown_pct",
-                "StopLossCoef1", "ProfitTargetCoef1"]
-        print(search_results[cols].head(5).to_string(index=True))
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

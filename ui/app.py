@@ -142,6 +142,7 @@ def _render_sidebar():
         "EA Manager":  "🤖",
         "Backtests":   "▶️",
         "AI Training": "🧠",
+        "Research":    "🔬",
     }
     for page_name, icon in pages.items():
         is_active_page = st.session_state.get("page") == page_name
@@ -313,6 +314,9 @@ def _render_page():
         render()
     elif page == "AI Training":
         from ui.pages.ai_training import render
+        render()
+    elif page == "Research":
+        from ui.pages.research import render
         render()
 
 

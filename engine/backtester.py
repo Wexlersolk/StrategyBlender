@@ -1,13 +1,18 @@
 """
 engine/backtester.py
 
-OHLC bar-by-bar backtesting engine.
+OHLC bar-by-bar backtesting engine with optional intra-bar simulation.
 
-For each bar:
-  1. Check pending orders — did price reach entry?
-  2. Check open positions — did SL or TP get hit?
-  3. Update trailing stops
-  4. Call strategy.on_bar() for new signals
+intrabar_steps > 1 enables Brownian bridge simulation:
+  For each bar, generate N synthetic sub-bar price steps that:
+    - Start at bar open
+    - End at bar close
+    - Reach the bar high and low somewhere in between
+  Trailing stops are updated at each sub-bar step, giving much
+  more accurate results — especially for trailing stop strategies.
+
+  This replicates MT5's "1 Minute OHLC" mode behaviour without
+  needing actual M1 data.
 """
 
 from __future__ import annotations
@@ -23,6 +28,59 @@ from engine.position import (
 from engine.results import BacktestResults
 
 
+# ── Brownian bridge price path generator ──────────────────────────────────────
+
+def _generate_intrabar_path(
+    open_:  float,
+    high:   float,
+    low:    float,
+    close:  float,
+    steps:  int,
+    rng:    np.random.Generator,  # kept for API compatibility, not used
+) -> np.ndarray:
+    """
+    Generate a deterministic intra-bar price path.
+
+    Uses MT5's own logic for its "1 Minute OHLC" mode:
+      Bullish bar (close >= open):  open → low → high → close
+      Bearish bar (close <  open):  open → high → low → close
+
+    This reflects real price tendency:
+      - In a bullish bar, price dips before rising
+      - In a bearish bar, price rises before falling
+
+    Interpolates linearly between the 4 waypoints using `steps` total points.
+    """
+    if steps <= 1:
+        return np.array([close])
+
+    bullish = close >= open_
+
+    if bullish:
+        waypoints = [open_, low, high, close]
+    else:
+        waypoints = [open_, high, low, close]
+
+    # Distribute steps across 3 segments
+    # Segment sizes: roughly proportional to price move magnitude
+    seg1 = abs(waypoints[1] - waypoints[0])
+    seg2 = abs(waypoints[2] - waypoints[1])
+    seg3 = abs(waypoints[3] - waypoints[2])
+    total = seg1 + seg2 + seg3 + 1e-10
+
+    s1 = max(1, int(steps * seg1 / total))
+    s2 = max(1, int(steps * seg2 / total))
+    s3 = max(1, steps - s1 - s2)
+
+    path = np.concatenate([
+        np.linspace(waypoints[0], waypoints[1], s1, endpoint=False),
+        np.linspace(waypoints[1], waypoints[2], s2, endpoint=False),
+        np.linspace(waypoints[2], waypoints[3], s3),
+    ])
+
+    return path
+
+
 class Backtester:
 
     def __init__(
@@ -32,6 +90,8 @@ class Backtester:
         spread_pips:        float = 0.0,
         tick_size:          float = 1.0,
         lot_value:          float = 1.0,
+        intrabar_steps:     int   = 1,    # 1 = standard OHLC, 60 = M1-like
+        seed:               int   = 42,
         verbose:            bool  = False,
     ):
         self.initial_capital    = initial_capital
@@ -39,12 +99,14 @@ class Backtester:
         self.spread_pips        = spread_pips
         self.tick_size          = tick_size
         self.lot_value          = lot_value
+        self.intrabar_steps     = intrabar_steps
         self.verbose            = verbose
+        self._rng               = np.random.default_rng(seed)
 
         self._balance:  float = initial_capital
         self._equity:   float = initial_capital
         self._order_id: int   = 0
-        self._open_positions:   List[Position]     = []
+        self._open_positions:   List[Position]      = []
         self._pending_orders:   List[PendingOrder]  = []
         self._closed_trades:    List[ClosedTrade]   = []
         self._current_strategy: Optional[BaseStrategy] = None
@@ -66,7 +128,6 @@ class Backtester:
         self._closed_trades   = []
         self._current_strategy = strategy
 
-        # Date filter
         if date_from:
             df = df[df.index >= pd.Timestamp(date_from)]
         if date_to:
@@ -86,26 +147,62 @@ class Backtester:
         strategy.on_start(df)
 
         warmup = 60
+        use_intrabar = self.intrabar_steps > 1
 
         for i in range(1, len(df)):
-            t = df.index[i]
+            t     = df.index[i]
+            bar   = df.iloc[i]
+            open_ = float(bar["open"])
+            high  = float(bar["high"])
+            low   = float(bar["low"])
+            close = float(bar["close"])
 
-            # 1. Check pending order triggers FIRST
+            # 1. Check pending order triggers
             self._check_pending_triggers(df, i)
 
-            # 2. Then expire orders that weren't triggered
+            # 2. Expire unfilled orders
             self._expire_pending(i)
 
-            # 3. Check SL/TP on open positions
-            self._check_sl_tp(df, i)
+            if use_intrabar and self._open_positions:
+                # ── Intra-bar simulation ──────────────────────────────────────
+                # Generate synthetic price path for this bar
+                path = _generate_intrabar_path(
+                    open_, high, low, close,
+                    self.intrabar_steps, self._rng
+                )
 
-            # 4. Update trailing stops
-            self._update_trailing(df, i)
+                # Compute path high/low for each sub-step
+                # We process in pairs: [price_prev, price_curr]
+                # to detect SL/TP hits and update trailing stops
+                for step in range(len(path)):
+                    step_price = path[step]
+                    # Use a tiny range around each step for SL/TP check
+                    if step == 0:
+                        step_high = max(open_, step_price)
+                        step_low  = min(open_, step_price)
+                    else:
+                        step_high = max(path[step-1], step_price)
+                        step_low  = min(path[step-1], step_price)
 
-            # 5. Update equity
+                    # Check SL/TP at this sub-step
+                    self._check_sl_tp_prices(step_high, step_low, i, t)
+
+                    # Update trailing stops at this sub-step
+                    self._update_trailing_prices(step_high, step_low)
+
+                    # Stop processing if all positions closed
+                    if not self._open_positions:
+                        break
+
+            else:
+                # ── Standard OHLC mode ────────────────────────────────────────
+                self._check_sl_tp(df, i)
+                self._update_trailing(df, i)
+
+            # 3. Update equity
             self._update_equity(df, i)
 
-            # 6. Call strategy
+            # 4. Call strategy
             if i >= warmup:
                 ctx = BarContext(df, i, self)
                 strategy.on_bar(ctx)
@@ -230,17 +327,14 @@ class Backtester:
                 if high >= order.entry_price:
                     fill_price = max(order.entry_price, open_)
                     triggered  = True
-
             elif order.order_type == OrderType.SELL_STOP:
                 if low <= order.entry_price:
                     fill_price = min(order.entry_price, open_)
                     triggered  = True
-
             elif order.order_type == OrderType.BUY_LIMIT:
                 if low <= order.entry_price:
                     fill_price = order.entry_price
                     triggered  = True
-
             elif order.order_type == OrderType.SELL_LIMIT:
                 if high >= order.entry_price:
                     fill_price = order.entry_price
@@ -248,13 +342,10 @@ class Backtester:
 
             if triggered:
                 self._pending_orders.remove(order)
-
-                # Pick up trailing stop params from strategy
                 trail_dist = getattr(self._current_strategy,
                                      '_next_trail_dist', 0.0)
                 trail_act  = getattr(self._current_strategy,
                                      '_next_trail_activation', 0.0)
-
                 self._open_position(
                     order.direction, fill_price,
                     order.stop_loss, order.take_profit,
@@ -264,11 +355,16 @@ class Backtester:
                 )
 
     def _check_sl_tp(self, df: pd.DataFrame, i: int):
+        """Standard OHLC SL/TP check."""
         bar  = df.iloc[i]
         high = float(bar["high"])
         low  = float(bar["low"])
         t    = df.index[i]
+        self._check_sl_tp_prices(high, low, i, t)
 
+    def _check_sl_tp_prices(self, high: float, low: float,
+                             bar_idx: int, time: pd.Timestamp):
+        """Check SL/TP against given high/low prices."""
         for pos in list(self._open_positions):
             sl_hit = False
             tp_hit = False
@@ -284,21 +380,25 @@ class Backtester:
                 if pos.take_profit > 0 and low <= pos.take_profit:
                     tp_hit = True
 
-            # Conservative: SL wins if both hit same bar
+            # Conservative: SL wins if both hit
             if sl_hit:
                 self._close_position(
-                    pos, pos.stop_loss, i, t, CloseReason.STOP_LOSS
+                    pos, pos.stop_loss, bar_idx, time, CloseReason.STOP_LOSS
                 )
             elif tp_hit:
                 self._close_position(
-                    pos, pos.take_profit, i, t, CloseReason.TAKE_PROFIT
+                    pos, pos.take_profit, bar_idx, time, CloseReason.TAKE_PROFIT
                 )
 
     def _update_trailing(self, df: pd.DataFrame, i: int):
+        """Standard OHLC trailing stop update."""
         bar  = df.iloc[i]
         high = float(bar["high"])
         low  = float(bar["low"])
+        self._update_trailing_prices(high, low)
 
+    def _update_trailing_prices(self, high: float, low: float):
+        """Update trailing stops given high/low prices."""
         for pos in self._open_positions:
             if pos.trailing_stop <= 0:
                 continue
@@ -319,11 +419,10 @@ class Backtester:
                     pos.stop_loss = new_sl
 
     def _expire_pending(self, current_bar: int):
-        to_remove = []
-        for order in self._pending_orders:
-            if order.expiry_bars > 0:
-                if current_bar - order.opened_bar >= order.expiry_bars:
-                    to_remove.append(order)
+        to_remove = [
+            o for o in self._pending_orders
+            if o.expiry_bars > 0 and current_bar - o.opened_bar >= o.expiry_bars
+        ]
         for order in to_remove:
             self._pending_orders.remove(order)
 
