@@ -1,57 +1,22 @@
 import pandas as pd
-from sqlalchemy import create_engine, text
-import config.settings as settings
 
-
-def _table_name(symbol):
-    """Sanitize symbol name for use as a SQL table name (dots and dashes are invalid)."""
-    return symbol.replace('.', '_').replace('-', '_') + "_daily"
-
+from engine.data_loader import load_bars as load_exported_bars
 
 class DataStorage:
-    """Handles saving and loading market data to/from SQL database."""
+    """Compatibility wrapper around the exported MT5 data files."""
 
     def __init__(self):
-        self.engine = create_engine(settings.DB_PATH)
+        self.engine = None
 
     def save_bars(self, symbol, df):
-        """Store DataFrame in table named '{symbol}_daily'. Appends, ignoring duplicates."""
-        table = _table_name(symbol)
-        df.to_sql(table, self.engine, if_exists='append', index=True)
+        raise NotImplementedError("Saving bars is no longer handled through DataStorage.")
 
     def load_bars(self, symbol, start_date=None, end_date=None):
-        """
-        Load OHLCV bars for a symbol between optional start/end dates.
-        Uses parameterized queries to prevent SQL injection.
-        """
-        table = _table_name(symbol)
-
-        if start_date and end_date:
-            query = text(f"SELECT * FROM {table} WHERE time >= :start_date AND time <= :end_date")
-            params = {"start_date": start_date, "end_date": end_date}
-        elif start_date:
-            query = text(f"SELECT * FROM {table} WHERE time >= :start_date")
-            params = {"start_date": start_date}
-        elif end_date:
-            query = text(f"SELECT * FROM {table} WHERE time <= :end_date")
-            params = {"end_date": end_date}
-        else:
-            query = text(f"SELECT * FROM {table}")
-            params = {}
-
         try:
-            df = pd.read_sql(
-                query,
-                self.engine,
-                params=params,
-                index_col='time',
-                parse_dates=['time']
-            )
+            return load_exported_bars(symbol, "D1", date_from=start_date, date_to=end_date)
         except Exception as e:
             print(f"Warning: could not load data for {symbol}: {e}")
             return pd.DataFrame()
-
-        return df
 
     def get_all_symbols_data(self, symbols, start_date, end_date):
         """Load data for multiple symbols and return a dict of symbol -> DataFrame."""

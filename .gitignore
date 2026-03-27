@@ -1,4 +1,12 @@
 .envrc
+mine/
+data/exports/
+data/exports/*
+.workspace_key
+config/.workspace_key
+config/profiles/
+convert/generated/
+strategies/generated/
 .gitignore
 .env 
 personal.txt

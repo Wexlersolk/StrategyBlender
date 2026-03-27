@@ -93,6 +93,19 @@ class BacktestResults:
         return abs_dd, rel_dd
 
     @property
+    def balance_drawdown_maximal(self) -> tuple[float, float]:
+        """Closed-trade balance drawdown: ($, %)."""
+        return self.max_drawdown
+
+    @property
+    def equity_drawdown_maximal(self) -> tuple[float, float]:
+        """
+        Equity drawdown: ($, %).
+        Currently based on the same realized-trade equity series used by the engine summary.
+        """
+        return self.max_drawdown
+
+    @property
     def sharpe_ratio(self) -> float:
         """Annualised Sharpe using monthly P&L."""
         monthly = self.monthly_stats()
@@ -151,6 +164,8 @@ class BacktestResults:
 
     def summary(self) -> dict:
         abs_dd, rel_dd = self.max_drawdown
+        bal_dd_abs, bal_dd_pct = self.balance_drawdown_maximal
+        eq_dd_abs, eq_dd_pct = self.equity_drawdown_maximal
         return {
             "symbol":              self.symbol,
             "timeframe":           self.timeframe,
@@ -164,6 +179,10 @@ class BacktestResults:
             "sharpe_ratio":        round(self.sharpe_ratio, 4),
             "max_drawdown_abs":    round(abs_dd, 2),
             "max_drawdown_pct":    round(rel_dd, 2),
+            "balance_dd_abs":      round(bal_dd_abs, 2),
+            "balance_dd_pct":      round(bal_dd_pct, 2),
+            "equity_dd_abs":       round(eq_dd_abs, 2),
+            "equity_dd_pct":       round(eq_dd_pct, 2),
             "recovery_factor":     round(self.recovery_factor, 4),
             "win_rate":            round(self.win_rate, 4),
             "n_trades":            self.n_trades,

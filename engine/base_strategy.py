@@ -67,6 +67,14 @@ class BarContext:
             price, sl, tp, lots, self._i, expiry_bars, comment
         )
 
+    def buy_limit(self, price: float, sl: float, tp: float,
+                  lots: float, expiry_bars: int = 1, comment: str = "") -> int:
+        """Place a buy limit order (triggers when price falls to `price`)."""
+        return self._bt._place_pending(
+            OrderType.BUY_LIMIT, Direction.LONG,
+            price, sl, tp, lots, self._i, expiry_bars, comment
+        )
+
     def sell_stop(self, price: float, sl: float, tp: float,
                   lots: float, expiry_bars: int = 1, comment: str = "") -> int:
         """Place a sell stop order (triggers when price falls to `price`)."""
@@ -75,18 +83,52 @@ class BarContext:
             price, sl, tp, lots, self._i, expiry_bars, comment
         )
 
+    def sell_limit(self, price: float, sl: float, tp: float,
+                   lots: float, expiry_bars: int = 1, comment: str = "") -> int:
+        """Place a sell limit order (triggers when price rises to `price`)."""
+        return self._bt._place_pending(
+            OrderType.SELL_LIMIT, Direction.SHORT,
+            price, sl, tp, lots, self._i, expiry_bars, comment
+        )
+
     def buy_market(self, sl: float, tp: float,
                    lots: float, comment: str = "") -> int:
         """Open a long position at current bar open."""
+        trailing_stop = getattr(self._bt._current_strategy, "_next_trail_dist", 0.0)
+        trail_activation = getattr(self._bt._current_strategy, "_next_trail_activation", 0.0)
+        exit_after_bars = getattr(self._bt._current_strategy, "_next_exit_after_bars", 0)
         return self._bt._open_position(
-            Direction.LONG, self.open, sl, tp, lots, self._i, self.time, comment
+            Direction.LONG,
+            self.open,
+            sl,
+            tp,
+            lots,
+            self._i,
+            self.time,
+            comment,
+            trailing_stop=trailing_stop,
+            trail_activation=trail_activation,
+            exit_after_bars=exit_after_bars,
         )
 
     def sell_market(self, sl: float, tp: float,
                     lots: float, comment: str = "") -> int:
         """Open a short position at current bar open."""
+        trailing_stop = getattr(self._bt._current_strategy, "_next_trail_dist", 0.0)
+        trail_activation = getattr(self._bt._current_strategy, "_next_trail_activation", 0.0)
+        exit_after_bars = getattr(self._bt._current_strategy, "_next_exit_after_bars", 0)
         return self._bt._open_position(
-            Direction.SHORT, self.open, sl, tp, lots, self._i, self.time, comment
+            Direction.SHORT,
+            self.open,
+            sl,
+            tp,
+            lots,
+            self._i,
+            self.time,
+            comment,
+            trailing_stop=trailing_stop,
+            trail_activation=trail_activation,
+            exit_after_bars=exit_after_bars,
         )
 
     def close_all(self):

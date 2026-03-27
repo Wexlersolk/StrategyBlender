@@ -1,9 +1,11 @@
 import os
 
-# -------------------- MT5 Settings --------------------
-MT5_PATH = os.getenv("MT5_PATH", 
-    os.path.expanduser("~/.wine/drive_c/Program Files/MetaTrader 5/terminal64.exe"))
-MT5_LOGIN = int(os.getenv("MT5_LOGIN", 0))          # 0 means no login attempt
+# -------------------- Optional MT5 Data Download Settings --------------------
+MT5_PATH = os.getenv(
+    "MT5_PATH",
+    os.path.expanduser("~/.wine/drive_c/Program Files/MetaTrader 5/terminal64.exe"),
+)
+MT5_LOGIN = int(os.getenv("MT5_LOGIN", 0))
 MT5_PASSWORD = os.getenv("MT5_PASSWORD", "")
 MT5_SERVER = os.getenv("MT5_SERVER", "")
 

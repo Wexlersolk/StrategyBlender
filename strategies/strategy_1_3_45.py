@@ -12,8 +12,8 @@ Note: This version prioritises research usability over exact MT5 replication.
 
 from __future__ import annotations
 import pandas as pd
-import talib
 from engine.base_strategy import BaseStrategy, BarContext
+from engine.indicators import PRICE_CLOSE, ema, sq_atr, sq_highest, sq_lowest, wma
 
 
 class Strategy_1_3_45(BaseStrategy):
@@ -42,20 +42,20 @@ class Strategy_1_3_45(BaseStrategy):
     lot_value: float = 0.1285   # HK50: 1 HKD per point / USDHKD ~7.78
 
     def compute_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
-        h = df["high"].values
-        l = df["low"].values
-        c = df["close"].values
-
         mid           = (df["high"] + df["low"]) / 2.0
         df["ao"]      = mid.rolling(5).mean() - mid.rolling(34).mean()
-        df["lwma"]    = talib.WMA(c, self.p("LWMAPeriod1"))
-        df["lwma_ma"] = talib.EMA(df["lwma"].values, self.p("IndicatorCrsMAPrd1"))
-        df["atr_19"]  = talib.ATR(h, l, c, self.p("ATR1_period"))
-        df["atr_45"]  = talib.ATR(h, l, c, self.p("ATR2_period"))
-        df["atr_14"]  = talib.ATR(h, l, c, self.p("ATR3_period"))
-        df["atr_100"] = talib.ATR(h, l, c, self.p("ATR4_period"))
-        df["highest"] = df["high"].rolling(self.p("Highest_period")).max()
-        df["lowest"]  = df["low"].rolling(self.p("Lowest_period")).min()
+        df["lwma"]    = wma(df["close"], self.p("LWMAPeriod1"))
+        df["lwma_ma"] = ema(df["lwma"], self.p("IndicatorCrsMAPrd1"))
+        df["atr_19"]  = sq_atr(df["high"], df["low"], df["close"], self.p("ATR1_period"))
+        df["atr_45"]  = sq_atr(df["high"], df["low"], df["close"], self.p("ATR2_period"))
+        df["atr_14"]  = sq_atr(df["high"], df["low"], df["close"], self.p("ATR3_period"))
+        df["atr_100"] = sq_atr(df["high"], df["low"], df["close"], self.p("ATR4_period"))
+        df["highest"] = sq_highest(
+            df["open"], df["high"], df["low"], df["close"], self.p("Highest_period"), PRICE_CLOSE
+        )
+        df["lowest"]  = sq_lowest(
+            df["open"], df["high"], df["low"], df["close"], self.p("Lowest_period"), PRICE_CLOSE
+        )
         return df
 
     def on_bar(self, ctx: BarContext):

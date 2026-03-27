@@ -111,10 +111,43 @@ class Backtester:
         self._closed_trades:    List[ClosedTrade]   = []
         self._current_strategy: Optional[BaseStrategy] = None
 
+    def _normalized_symbol(self) -> str:
+        symbol = getattr(self._current_strategy, "symbol", "") or ""
+        symbol = symbol.strip().upper()
+        symbol = symbol.split("(")[0]
+        for suffix in ["_FTMO", ".FTMO", "_MT5", ".MT5"]:
+            if symbol.endswith(suffix):
+                symbol = symbol[: -len(suffix)]
+        if symbol in {"HKG50_MT5IMPORT", "HK50", "HK50.CASH"}:
+            return "HK50.CASH"
+        if symbol in {"US30_MT5", "US30", "US30.CASH"}:
+            return "US30.CASH"
+        return symbol
+
+    def _profit_multiplier(self, exit_price: float) -> float:
+        symbol = self._normalized_symbol()
+
+        if symbol == "XAUUSD":
+            return 100.0
+        if symbol == "XAGUSD":
+            return 5_000.0
+
+        if len(symbol) == 6 and symbol.isalpha():
+            contract_size = 100_000.0
+            base = symbol[:3]
+            quote = symbol[3:]
+            if quote == "USD":
+                return contract_size
+            if base == "USD":
+                return contract_size / max(float(exit_price), 1e-9)
+
+        return self.lot_value
+
     def run(
         self,
         strategy:  BaseStrategy,
         df:        pd.DataFrame,
+        intrabar_df: Optional[pd.DataFrame] = None,
         date_from: Optional[str] = None,
         date_to:   Optional[str] = None,
     ) -> BacktestResults:
@@ -132,6 +165,13 @@ class Backtester:
             df = df[df.index >= pd.Timestamp(date_from)]
         if date_to:
             df = df[df.index <= pd.Timestamp(date_to)]
+        if intrabar_df is not None:
+            intrabar_df = intrabar_df.copy()
+            intrabar_df.columns = [c.lower() for c in intrabar_df.columns]
+            if date_from:
+                intrabar_df = intrabar_df[intrabar_df.index >= pd.Timestamp(date_from)]
+            if date_to:
+                intrabar_df = intrabar_df[intrabar_df.index <= pd.Timestamp(date_to)]
 
         if df.empty:
             raise ValueError("No data in the specified date range.")
@@ -162,37 +202,58 @@ class Backtester:
 
             # 2. Expire unfilled orders
             self._expire_pending(i)
+            self._expire_positions(i, t, open_)
 
-            if use_intrabar and self._open_positions:
-                # ── Intra-bar simulation ──────────────────────────────────────
-                # Generate synthetic price path for this bar
-                path = _generate_intrabar_path(
-                    open_, high, low, close,
-                    self.intrabar_steps, self._rng
+            if use_intrabar and (self._open_positions or self._pending_orders):
+                next_t = (
+                    df.index[i + 1]
+                    if i + 1 < len(df)
+                    else t + (df.index[i] - df.index[i - 1])
                 )
+                minute_slice = None
+                if intrabar_df is not None:
+                    minute_slice = intrabar_df[(intrabar_df.index >= t) & (intrabar_df.index < next_t)]
 
-                # Compute path high/low for each sub-step
-                # We process in pairs: [price_prev, price_curr]
-                # to detect SL/TP hits and update trailing stops
-                for step in range(len(path)):
-                    step_price = path[step]
-                    # Use a tiny range around each step for SL/TP check
-                    if step == 0:
-                        step_high = max(open_, step_price)
-                        step_low  = min(open_, step_price)
-                    else:
-                        step_high = max(path[step-1], step_price)
-                        step_low  = min(path[step-1], step_price)
+                if minute_slice is not None and not minute_slice.empty:
+                    for minute_time, minute_bar in minute_slice.iterrows():
+                        self._check_pending_triggers_prices(
+                            float(minute_bar["high"]),
+                            float(minute_bar["low"]),
+                            float(minute_bar["open"]),
+                            i,
+                            minute_time,
+                        )
+                        self._check_sl_tp_prices(
+                            float(minute_bar["high"]),
+                            float(minute_bar["low"]),
+                            i,
+                            minute_time,
+                        )
+                        self._update_trailing_prices(
+                            float(minute_bar["high"]),
+                            float(minute_bar["low"]),
+                        )
+                        if not self._open_positions and not self._pending_orders:
+                            break
+                elif self._open_positions:
+                    # Fallback when minute data is unavailable.
+                    path = _generate_intrabar_path(
+                        open_, high, low, close,
+                        self.intrabar_steps, self._rng
+                    )
+                    for step in range(len(path)):
+                        step_price = path[step]
+                        if step == 0:
+                            step_high = max(open_, step_price)
+                            step_low  = min(open_, step_price)
+                        else:
+                            step_high = max(path[step-1], step_price)
+                            step_low  = min(path[step-1], step_price)
 
-                    # Check SL/TP at this sub-step
-                    self._check_sl_tp_prices(step_high, step_low, i, t)
-
-                    # Update trailing stops at this sub-step
-                    self._update_trailing_prices(step_high, step_low)
-
-                    # Stop processing if all positions closed
-                    if not self._open_positions:
-                        break
+                        self._check_sl_tp_prices(step_high, step_low, i, t)
+                        self._update_trailing_prices(step_high, step_low)
+                        if not self._open_positions:
+                            break
 
             else:
                 # ── Standard OHLC mode ────────────────────────────────────────
@@ -252,6 +313,7 @@ class Backtester:
         sl: float, tp: float, lots: float,
         bar_idx: int, time: pd.Timestamp, comment: str = "",
         trailing_stop: float = 0.0, trail_activation: float = 0.0,
+        exit_after_bars: int = 0,
     ) -> int:
         pid = self._next_id()
         if direction == Direction.LONG:
@@ -262,6 +324,7 @@ class Backtester:
             opened_bar=bar_idx, opened_time=time,
             trailing_stop=trailing_stop,
             trail_activation=trail_activation,
+            exit_after_bars=exit_after_bars,
             comment=comment
         )
         self._open_positions.append(pos)
@@ -308,7 +371,7 @@ class Backtester:
             pips = exit_price - pos.entry_price
         else:
             pips = pos.entry_price - exit_price
-        return pips * pos.lots * self.lot_value
+        return pips * pos.lots * self._profit_multiplier(exit_price)
 
     # ── OHLC simulation ───────────────────────────────────────────────────────
 
@@ -318,6 +381,17 @@ class Backtester:
         low   = float(bar["low"])
         open_ = float(bar["open"])
         t     = df.index[i]
+        self._check_pending_triggers_prices(high, low, open_, i, t)
+
+    def _check_pending_triggers_prices(
+        self,
+        high: float,
+        low: float,
+        open_: float,
+        bar_idx: int,
+        time: pd.Timestamp,
+    ):
+        t = time
 
         for order in list(self._pending_orders):
             triggered  = False
@@ -346,12 +420,18 @@ class Backtester:
                                      '_next_trail_dist', 0.0)
                 trail_act  = getattr(self._current_strategy,
                                      '_next_trail_activation', 0.0)
+                exit_after_bars = getattr(
+                    self._current_strategy,
+                    '_next_exit_after_bars',
+                    0,
+                )
                 self._open_position(
                     order.direction, fill_price,
                     order.stop_loss, order.take_profit,
-                    order.lots, i, t, order.comment,
+                    order.lots, bar_idx, t, order.comment,
                     trailing_stop=trail_dist,
                     trail_activation=trail_act,
+                    exit_after_bars=exit_after_bars,
                 )
 
     def _check_sl_tp(self, df: pd.DataFrame, i: int):
@@ -425,6 +505,14 @@ class Backtester:
         ]
         for order in to_remove:
             self._pending_orders.remove(order)
+
+    def _expire_positions(self, current_bar: int, time: pd.Timestamp, open_price: float):
+        to_close = [
+            p for p in self._open_positions
+            if p.exit_after_bars > 0 and current_bar - p.opened_bar >= p.exit_after_bars
+        ]
+        for pos in to_close:
+            self._close_position(pos, open_price, current_bar, time, CloseReason.SIGNAL)
 
     def _update_equity(self, df: pd.DataFrame, i: int):
         close    = float(df["close"].iloc[i])

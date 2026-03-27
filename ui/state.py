@@ -9,31 +9,26 @@ import streamlit as st
 
 def init_state():
     defaults = {
-        # MT5 connection
-        "mt5_connected":      False,
-        "mt5_message":        "",
-        "mt5_creds":          {},
-
-        # Active account
-        "active_profile_id":  None,   # e.g. "12345_FTMO-Demo2"
-
         # EA manager
-        "eas":                {},     # { ea_id: { name, symbol, tf, params, source } }
+        "eas":                {},     # { ea_id: { name, symbol, timeframe, source, python_source, engine_source, ... } }
         "ea_counter":         0,
 
         # Backtests
         "backtest_results":   {},     # { ea_id: { monthly_df, deals_df, summary } }
+        "ai_experiment_results": {},  # { exp_id: { monthly_df, deals_df, summary, meta } }
 
         # AI training
         "model_trained":      False,
         "training_log":       [],
+        "training_artifact":  None,
         "schedule_path":      "",
+        "ai_saved_reports":   [],
 
         # Navigation
         "page":               "Dashboard",
 
         # Internal flags
-        "_auto_connect_done": False,
+        "_workspace_loaded":  False,
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -45,13 +40,5 @@ def autosave():
     Save the current session state to the active profile.
     Call this after any meaningful change (EA added, backtest done, etc).
     """
-    from ui.profile_manager import save_profile
-
-    creds = st.session_state.get("mt5_creds", {})
-    login  = creds.get("login")
-    server = creds.get("server")
-
-    if not login or not server:
-        return  # nothing to save yet
-
-    save_profile(login, server, dict(st.session_state))
+    from ui.profile_manager import save_workspace_profile
+    save_workspace_profile(dict(st.session_state))

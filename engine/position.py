@@ -60,6 +60,7 @@ class Position:
     opened_time:   pd.Timestamp
     trailing_stop: float = 0.0  # current trailing stop distance in price
     trail_activation: float = 0.0  # profit needed before trailing activates
+    exit_after_bars: int = 0
     comment:       str   = ""
 
 

@@ -1,15 +1,13 @@
 """
-ui/pages/research.py
+ui/views/research.py
 
 Research tab — backtest, WFO, Monte Carlo, AI comparison.
 All tools use the Python engine (no MT5 needed).
 """
 
 from __future__ import annotations
-import sys
+
 import os
-import importlib
-import inspect
 from pathlib import Path
 
 import streamlit as st
@@ -19,50 +17,15 @@ import plotly.graph_objects as go
 import plotly.express as px
 
 from ui.components.common import section_header, empty_state, error_box
-
-# ── Strategy discovery ────────────────────────────────────────────────────────
-
-def discover_strategies() -> dict[str, type]:
-    """
-    Scan strategies/ folder and return {display_name: class} for all
-    BaseStrategy subclasses found.
-    """
-    root = Path(__file__).parent.parent.parent
-    sys.path.insert(0, str(root))
-
-    from engine.base_strategy import BaseStrategy
-
-    strategies = {}
-    strat_dir  = root / "strategies"
-    if not strat_dir.exists():
-        return strategies
-
-    for py_file in sorted(strat_dir.glob("*.py")):
-        if py_file.name.startswith("_"):
-            continue
-        module_name = f"strategies.{py_file.stem}"
-        try:
-            mod = importlib.import_module(module_name)
-            for _, cls in inspect.getmembers(mod, inspect.isclass):
-                if (issubclass(cls, BaseStrategy) and
-                        cls is not BaseStrategy and
-                        cls.__module__ == module_name):
-                    display = getattr(cls, "name", cls.__name__)
-                    strategies[display] = cls
-        except Exception as e:
-            st.warning(f"Could not load {py_file.name}: {e}")
-
-    return strategies
+from services.backtest_service import (
+    available_backtest_symbols,
+    discover_strategies,
+    run_backtest,
+)
 
 
 def get_available_symbols() -> list[str]:
-    """Return symbols that have H1 data in the database."""
-    try:
-        from engine.data_loader import available_symbols
-        syms = available_symbols("H1")
-        return syms if syms else ["HK50.cash", "XAUUSD", "US30.cash", "USDJPY"]
-    except Exception:
-        return ["HK50.cash", "XAUUSD", "US30.cash", "USDJPY"]
+    return available_backtest_symbols("H1")
 
 
 # ── Main render ───────────────────────────────────────────────────────────────
@@ -152,18 +115,15 @@ def _run_and_show_backtest(strat_cls, symbol, date_from, date_to,
                             overrides, intrabar_steps=1):
     with st.spinner("Running backtest..."):
         try:
-            from engine.data_loader import load_bars
-            from engine.backtester  import Backtester
-
-            df  = load_bars(symbol, "H1")
-            bt  = Backtester(
-                initial_capital = 100_000,
-                lot_value       = getattr(strat_cls, "lot_value", 1.0),
-                intrabar_steps  = intrabar_steps,
+            r = run_backtest(
+                strat_cls,
+                symbol=symbol,
+                timeframe="H1",
+                date_from=date_from,
+                date_to=date_to,
+                overrides=overrides,
+                intrabar_steps=intrabar_steps,
             )
-            strat = strat_cls(**{k: v for k, v in overrides.items()
-                                  if k in strat_cls.params})
-            r = bt.run(strat, df, date_from=date_from, date_to=date_to)
             st.session_state["bt_result"] = r
             st.session_state["bt_last_strat"] = strat_cls.__name__
             st.rerun()
@@ -301,7 +261,6 @@ def _run_wfo(strat_cls, symbol, param_grid, train_months, test_months, optimize_
                     f"= ~{est_bt} backtests)..."):
         try:
             from engine.data_loader    import load_bars
-            from engine.backtester     import Backtester
             from research.walk_forward import run_wfo
 
             df = load_bars(symbol, "H1")

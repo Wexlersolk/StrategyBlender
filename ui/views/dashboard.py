@@ -1,37 +1,14 @@
-"""
-ui/pages/dashboard.py — Portfolio overview dashboard
-"""
+"""Portfolio overview dashboard."""
 
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-from ui.components.common import section_header, empty_state, metric_card
-from ui.mt5_auth import get_account_info
+from ui.components.common import section_header, empty_state
 
 
 def render():
-    section_header("Dashboard", "Portfolio overview and account status")
-
-    # ── Account info row ──────────────────────────────────────────────────────
-    info = get_account_info() if st.session_state.get("mt5_connected") else None
-
-    if info:
-        c1, c2, c3, c4, c5 = st.columns(5)
-        with c1:
-            st.metric("Balance", f"{info['balance']:,.2f} {info['currency']}")
-        with c2:
-            st.metric("Equity", f"{info['equity']:,.2f} {info['currency']}")
-        with c3:
-            st.metric("Free Margin", f"{info['margin']:,.2f}")
-        with c4:
-            st.metric("Leverage", f"1:{info['leverage']}")
-        with c5:
-            st.metric("Account", str(info["login"]))
-    else:
-        st.warning("Not connected to MT5. Go to the sidebar to log in.", icon="⚠️")
-
-    st.markdown("---")
+    section_header("Dashboard", "Portfolio overview for local strategy research")
 
     # ── EA summary ────────────────────────────────────────────────────────────
     eas = st.session_state.get("eas", {})

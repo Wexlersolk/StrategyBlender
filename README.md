@@ -1,24 +1,51 @@
-# Meta-Learning for Adaptive Algorithmic Trading
+# StrategyBlender
 
-This project implements a meta-learning layer on top of existing MetaTrader 5 trading bots.  
-It enables rapid adaptation of trading parameters to changing market conditions using only a few days of new data.
+Local-first platform for:
+- loading MT5 `.mq5` strategies
+- converting them into Python strategy artifacts
+- backtesting them on exported MT5 market data
+- training and comparing AI workflows on the resulting backtests
 
-See the project overview document for full details.
+## Current Flow
 
-## Quick Start
+1. Put MT5 strategy source files in `mine/` or load them through the UI.
+2. Start the app with:
+   `streamlit run ui/app.py`
+3. In `EA Manager`, load a strategy and generate:
+   - a local engine strategy for research/backtesting
+   - a `strategytester5` scaffold for future MT5-side orchestration
+4. In `Backtests`, run the generated strategy on data from:
+   `data/exports/MT5 data export/`
 
-1. Install dependencies: `pip install -r requirements.txt`
-2. Configure symbols and MT5 connection in `config/settings.py` and `config/symbols.yaml`
-3. Fetch historical data: `python scripts/update_data.py`
-4. Train the meta-model: `python scripts/train_meta.py`
-5. Run live adaptation: `python main.py`
+## Data
+
+The app now reads MT5 tab-delimited export files directly from:
+`data/exports/MT5 data export/`
+
+Expected format:
+- `<DATE>`
+- `<TIME>`
+- `<OPEN>`
+- `<HIGH>`
+- `<LOW>`
+- `<CLOSE>`
+- `<TICKVOL>`
+
+Minute data is resampled in code for `H1`, `H4`, and `D1` backtests.
 
 ## Project Structure
 
-- `config/` – configuration files
-- `data/` – data fetching, storage, feature engineering, task creation
-- `meta_learning/` – meta-learning model, MAML implementation, training & adaptation
-- `execution/` – MT5 bridge, risk management, parameter validation
-- `monitoring/` – logging and optional dashboard
-- `scripts/` – utility scripts
-- `tests/` – unit tests (to be written)
+- `ui/` contains the Streamlit app shell and views
+- `services/` contains reusable conversion and backtest orchestration logic
+- `engine/` contains the local strategy/backtest engine
+- `strategies/` contains hand-written and generated local Python strategies
+- `convert/` contains MT5-to-Python conversion utilities
+- `data/` contains exported market data and compatibility loaders
+- `mine/` is the local drop folder for raw `.mq5` strategy files
+- `scripts/` contains console utilities
+
+## Notes
+
+- MT5 login is no longer part of the UI.
+- MT5 is only relevant for future console-side data download workflows.
+- Conversion of large StrategyQuant EAs is heuristic and may still require manual review.
