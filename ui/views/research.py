@@ -1,14 +1,11 @@
 """
 ui/views/research.py
 
-Research tab — backtest, WFO, Monte Carlo, AI comparison.
+Research tab — backtest, WFO, Monte Carlo, and AI workflow notes.
 All tools use the Python engine (no MT5 needed).
 """
 
 from __future__ import annotations
-
-import os
-from pathlib import Path
 
 import streamlit as st
 import pandas as pd
@@ -31,7 +28,7 @@ def get_available_symbols() -> list[str]:
 # ── Main render ───────────────────────────────────────────────────────────────
 
 def render():
-    section_header("Research", "Backtest, Walk-Forward, Monte Carlo and AI comparison")
+    section_header("Research", "Backtest, Walk-Forward, Monte Carlo, and AI workflow notes")
 
     strategies = discover_strategies()
     if not strategies:
@@ -45,7 +42,7 @@ def render():
         "▶️ Backtest",
         "📈 Walk-Forward",
         "🎲 Monte Carlo",
-        "🤖 AI Comparison",
+        "🤖 AI Workflow",
     ])
 
     with tab_bt:
@@ -457,175 +454,15 @@ def _show_mc_results(mc, ruin_threshold):
 # ── AI Comparison tab ─────────────────────────────────────────────────────────
 
 def _render_ai_tab():
-    st.markdown("#### AI vs Baseline Comparison")
+    st.markdown("#### AI Workflow")
+    st.info(
+        "The canonical AI path now lives in the `AI Training` page. "
+        "Use that page to build decision-level trade datasets, benchmark overlay policies, "
+        "and train local meta-filter/sizing models.",
+        icon="ℹ️",
+    )
     st.markdown(
-        "<p style='color:#8B9BB4;'>Compares fixed parameters against "
-        "AI-scheduled lot sizing from the trained model.</p>",
-        unsafe_allow_html=True
+        "<p style='color:#8B9BB4;'>The old monthly schedule workflow has been retired in favor "
+        "of a decision-research loop that can be backtested directly inside the Python engine.</p>",
+        unsafe_allow_html=True,
     )
-
-    if "bt_result" not in st.session_state or not st.session_state["bt_result"]:
-        st.info("Run a backtest in the Backtest tab first.", icon="ℹ️")
-        return
-
-    import config.settings as settings
-    if not Path(settings.MODEL_SAVE_PATH).exists():
-        st.warning("No trained model found. Go to AI Training and train the model first.",
-                    icon="⚠️")
-        return
-
-    r = st.session_state["bt_result"]
-    strat_name = st.session_state.get("bt_last_strat", "")
-    st.success(f"Baseline: {r.n_trades} trades | Sharpe: {r.sharpe_ratio:.2f} | "
-               f"Net: ${r.net_profit:,.0f}", icon="📊")
-
-    if st.button("🤖 Run AI Comparison", type="primary",
-                  use_container_width=True, key="ai_run"):
-        _run_ai_comparison(r)
-
-    if "ai_result" in st.session_state and st.session_state["ai_result"]:
-        _show_ai_comparison(r, st.session_state["ai_result"])
-
-
-def _run_ai_comparison(baseline):
-    with st.spinner("Loading AI schedule and running comparison..."):
-        try:
-            import csv, torch
-            import config.settings as settings
-            from engine.data_loader  import load_bars
-            from engine.backtester   import Backtester
-            from engine.base_strategy import BaseStrategy
-
-            # Load schedule CSV
-            schedule_path = (
-                Path.home() / ".wine/drive_c/users" /
-                os.environ.get("USER", "user") /
-                "AppData/Roaming/MetaQuotes/Terminal/Common/Files/ml_params_schedule.csv"
-            )
-            if not schedule_path.exists():
-                error_box(f"Schedule CSV not found at {schedule_path}. "
-                          "Run Generate Schedule in AI Training.")
-                return
-
-            schedule = {}
-            with open(schedule_path) as f:
-                for row in csv.DictReader(f):
-                    ym = row["date"][:7].replace(".", "-")
-                    schedule[ym] = float(row["mmLots"])
-
-            # Get the strategy class used for baseline
-            strategies   = discover_strategies()
-            strat_name   = st.session_state.get("bt_last_strat", "")
-            strat_cls    = next(
-                (cls for cls in strategies.values()
-                 if cls.__name__ == strat_name),
-                list(strategies.values())[0]
-            )
-
-            # Build AI strategy that reads lot size from schedule
-            class AIScheduledStrategy(strat_cls):
-                def on_bar(self, ctx):
-                    ym = ctx.time.strftime("%Y-%m")
-                    if ym in schedule:
-                        self.params["mmLots"] = schedule[ym]
-                    super().on_bar(ctx)
-
-            # Load same data and run
-            df  = load_bars(baseline.symbol or "HK50.cash", "H1")
-            bt  = Backtester(
-                initial_capital = baseline.initial_capital,
-                lot_value       = getattr(strat_cls, "lot_value", 1.0),
-            )
-            strat  = AIScheduledStrategy()
-            ai_res = bt.run(
-                strat, df,
-                date_from = str(baseline.date_from.date()),
-                date_to   = str(baseline.date_to.date()),
-            )
-            st.session_state["ai_result"] = ai_res
-            st.rerun()
-
-        except Exception as e:
-            import traceback
-            error_box(f"AI comparison failed: {e}\n{traceback.format_exc()}")
-
-
-def _show_ai_comparison(baseline, ai_res):
-    st.markdown("---")
-    st.markdown("##### Metrics Comparison")
-
-    abs_dd_b, rel_dd_b = baseline.max_drawdown
-    abs_dd_a, rel_dd_a = ai_res.max_drawdown
-
-    metrics = [
-        ("Net Profit",     f"${baseline.net_profit:,.0f}",
-                           f"${ai_res.net_profit:,.0f}",
-                           ai_res.net_profit > baseline.net_profit),
-        ("Sharpe Ratio",   f"{baseline.sharpe_ratio:.2f}",
-                           f"{ai_res.sharpe_ratio:.2f}",
-                           ai_res.sharpe_ratio > baseline.sharpe_ratio),
-        ("Max Drawdown",   f"{rel_dd_b:.2f}%",
-                           f"{rel_dd_a:.2f}%",
-                           rel_dd_a < rel_dd_b),
-        ("Profit Factor",  f"{baseline.profit_factor:.2f}",
-                           f"{ai_res.profit_factor:.2f}",
-                           ai_res.profit_factor > baseline.profit_factor),
-        ("Win Rate",       f"{baseline.win_rate*100:.1f}%",
-                           f"{ai_res.win_rate*100:.1f}%",
-                           ai_res.win_rate > baseline.win_rate),
-        ("Gross Loss",     f"${baseline.gross_loss:,.0f}",
-                           f"${ai_res.gross_loss:,.0f}",
-                           ai_res.gross_loss > baseline.gross_loss),  # less loss = better
-    ]
-
-    cols = st.columns(len(metrics))
-    for col, (name, bval, aval, ai_better) in zip(cols, metrics):
-        col.metric(
-            label      = name,
-            value      = aval,
-            delta      = f"Base: {bval}",
-            delta_color = "normal" if ai_better else "inverse"
-        )
-
-    # Equity curves
-    st.markdown("##### Equity Curves")
-    b_eq = baseline.equity_curve
-    a_eq = ai_res.equity_curve
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=b_eq.index, y=b_eq.values, mode="lines",
-        name="Baseline", line=dict(color="#8B9BB4", width=2, dash="dot")
-    ))
-    fig.add_trace(go.Scatter(
-        x=a_eq.index, y=a_eq.values, mode="lines",
-        name="AI-Scheduled", line=dict(color="#2E75B6", width=2.5),
-        fill="tonexty", fillcolor="rgba(46,117,182,0.07)"
-    ))
-    fig.update_layout(
-        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)", height=300,
-        margin=dict(l=0, r=0, t=10, b=0), yaxis_title="Equity ($)"
-    )
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Drawdown comparison
-    st.markdown("##### Drawdown")
-    for label, eq, color in [("Baseline", b_eq, "#E74C3C"),
-                               ("AI", a_eq, "#F39C12")]:
-        peak = np.maximum.accumulate(eq.values)
-        dd   = (peak - eq.values) / peak * 100
-        fig2 = go.Figure() if label == "Baseline" else fig2
-        fig2.add_trace(go.Scatter(
-            x=eq.index, y=-dd, mode="lines", name=label,
-            line=dict(color=color, width=1.5),
-            fill="tozeroy",
-            fillcolor=f"rgba({','.join(str(int(color[i:i+2],16)) for i in (1,3,5))},0.1)"
-        ))
-
-    fig2.update_layout(
-        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)", height=220,
-        margin=dict(l=0, r=0, t=10, b=0), yaxis_title="Drawdown (%)"
-    )
-    st.plotly_chart(fig2, use_container_width=True)

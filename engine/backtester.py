@@ -21,6 +21,13 @@ import pandas as pd
 import numpy as np
 from typing import List, Optional
 from engine.base_strategy import BaseStrategy, BarContext
+from engine.policy import (
+    DecisionRecord,
+    NullOverlayPolicy,
+    OverlayPolicy,
+    OverlayDecision,
+    TradeIntent,
+)
 from engine.position import (
     Direction, OrderType, CloseReason,
     PendingOrder, Position, ClosedTrade
@@ -88,28 +95,35 @@ class Backtester:
         initial_capital:    float = 100_000.0,
         commission_per_lot: float = 0.0,
         spread_pips:        float = 0.0,
+        slippage_pips:      float = 0.0,
         tick_size:          float = 1.0,
         lot_value:          float = 1.0,
         intrabar_steps:     int   = 1,    # 1 = standard OHLC, 60 = M1-like
         seed:               int   = 42,
         verbose:            bool  = False,
+        overlay_policy: Optional[OverlayPolicy] = None,
     ):
         self.initial_capital    = initial_capital
         self.commission_per_lot = commission_per_lot
         self.spread_pips        = spread_pips
+        self.slippage_pips      = slippage_pips
         self.tick_size          = tick_size
         self.lot_value          = lot_value
         self.intrabar_steps     = intrabar_steps
         self.verbose            = verbose
         self._rng               = np.random.default_rng(seed)
+        self.overlay_policy     = overlay_policy or NullOverlayPolicy()
 
         self._balance:  float = initial_capital
         self._equity:   float = initial_capital
         self._order_id: int   = 0
+        self._decision_id: int = 0
         self._open_positions:   List[Position]      = []
         self._pending_orders:   List[PendingOrder]  = []
         self._closed_trades:    List[ClosedTrade]   = []
+        self._decision_records: List[DecisionRecord] = []
         self._current_strategy: Optional[BaseStrategy] = None
+        self._price_df: Optional[pd.DataFrame] = None
 
     def _normalized_symbol(self) -> str:
         symbol = getattr(self._current_strategy, "symbol", "") or ""
@@ -143,6 +157,16 @@ class Backtester:
 
         return self.lot_value
 
+    def _apply_entry_execution_price(self, direction: Direction, price: float) -> float:
+        if direction == Direction.LONG:
+            return float(price) + float(self.slippage_pips)
+        return float(price) - float(self.slippage_pips)
+
+    def _apply_exit_execution_price(self, direction: Direction, price: float) -> float:
+        if direction == Direction.LONG:
+            return float(price) - float(self.slippage_pips)
+        return float(price) + float(self.slippage_pips)
+
     def run(
         self,
         strategy:  BaseStrategy,
@@ -156,9 +180,11 @@ class Backtester:
         self._balance  = self.initial_capital
         self._equity   = self.initial_capital
         self._order_id = 0
+        self._decision_id = 0
         self._open_positions  = []
         self._pending_orders  = []
         self._closed_trades   = []
+        self._decision_records = []
         self._current_strategy = strategy
 
         if date_from:
@@ -178,6 +204,7 @@ class Backtester:
 
         df = df.copy()
         df.columns = [c.lower() for c in df.columns]
+        self._price_df = df
 
         if self.verbose:
             print(f"Computing indicators for {len(df)} bars...")
@@ -277,6 +304,7 @@ class Backtester:
 
         results = BacktestResults(
             trades          = self._closed_trades,
+            decision_records = self._decision_records,
             initial_capital = self.initial_capital,
             symbol          = getattr(strategy, "symbol", ""),
             timeframe       = getattr(strategy, "timeframe", ""),
@@ -294,10 +322,136 @@ class Backtester:
         self._order_id += 1
         return self._order_id
 
+    def _next_decision_id(self) -> int:
+        self._decision_id += 1
+        return self._decision_id
+
+    def _market_state(self, bar_idx: int) -> dict:
+        if self._price_df is None or bar_idx <= 0:
+            return {
+                "realized_vol": 0.0,
+                "balance_drawdown_pct": 0.0,
+                "equity_drawdown_pct": 0.0,
+                "open_positions": len(self._open_positions),
+                "pending_orders": len(self._pending_orders),
+                "closed_trades": len(self._closed_trades),
+                "equity": self._equity,
+                "balance": self._balance,
+            }
+
+        closes = self._price_df["close"].iloc[: bar_idx + 1].astype(float)
+        rets = closes.pct_change().dropna()
+        realized_vol = float(rets.tail(20).std(ddof=0) * np.sqrt(252)) if len(rets) >= 2 else 0.0
+
+        if self._closed_trades:
+            closed_equity = self.initial_capital + np.cumsum(
+                np.concatenate([[0.0], [t.net_profit for t in self._closed_trades]])
+            )
+        else:
+            closed_equity = np.array([self.initial_capital], dtype=float)
+        closed_peak = np.maximum.accumulate(closed_equity)
+        balance_drawdown_pct = float(((closed_peak - closed_equity) / np.maximum(closed_peak, 1e-9)).max() * 100.0) if len(closed_equity) else 0.0
+
+        return {
+            "realized_vol": realized_vol,
+            "balance_drawdown_pct": balance_drawdown_pct,
+            "open_positions": len(self._open_positions),
+            "pending_orders": len(self._pending_orders),
+            "closed_trades": len(self._closed_trades),
+            "equity": self._equity,
+            "balance": self._balance,
+        }
+
+    def _submit_trade_intent(self, intent: TradeIntent) -> int:
+        state = self._market_state(intent.bar_idx)
+        decision = self.overlay_policy.evaluate(intent, state) if self.overlay_policy else OverlayDecision()
+        final_lots = float(
+            decision.adjusted_lots
+            if decision.adjusted_lots is not None
+            else intent.lots * float(decision.size_multiplier)
+        )
+        if final_lots <= 0:
+            decision.allow_trade = False
+
+        decision_id = self._next_decision_id()
+        self._decision_records.append(DecisionRecord(
+            decision_id=decision_id,
+            time=intent.time,
+            bar_idx=intent.bar_idx,
+            symbol=getattr(self._current_strategy, "symbol", ""),
+            timeframe=getattr(self._current_strategy, "timeframe", ""),
+            order_type=intent.order_type.value,
+            direction=intent.direction.value,
+            requested_lots=float(intent.lots),
+            final_lots=float(final_lots if decision.allow_trade else 0.0),
+            allow_trade=bool(decision.allow_trade),
+            policy_name=self.overlay_policy.name if self.overlay_policy else "None",
+            policy_tag=decision.tag,
+            comment=intent.comment,
+            market_features={
+                "realized_vol": float(state.get("realized_vol", 0.0)),
+                "balance_drawdown_pct": float(state.get("balance_drawdown_pct", 0.0)),
+                "equity": float(state.get("equity", self._equity)),
+                "balance": float(state.get("balance", self._balance)),
+            },
+            policy_notes=dict(decision.notes or {}),
+        ))
+        if not decision.allow_trade:
+            return 0
+
+        executable = TradeIntent(
+            order_type=intent.order_type,
+            direction=intent.direction,
+            price=float(intent.price),
+            stop_loss=float(intent.stop_loss),
+            take_profit=float(intent.take_profit),
+            lots=float(final_lots),
+            bar_idx=int(intent.bar_idx),
+            time=intent.time,
+            expiry_bars=int(intent.expiry_bars),
+            comment=intent.comment,
+            trailing_stop=float(intent.trailing_stop),
+            trail_activation=float(intent.trail_activation),
+            exit_after_bars=int(intent.exit_after_bars),
+        )
+        return self._execute_trade_intent(executable, decision_id=decision_id, requested_lots=float(intent.lots))
+
+    def _execute_trade_intent(self, intent: TradeIntent, *, decision_id: int, requested_lots: float) -> int:
+        if intent.order_type == OrderType.MARKET:
+            return self._open_position(
+                intent.direction,
+                intent.price,
+                intent.stop_loss,
+                intent.take_profit,
+                intent.lots,
+                intent.bar_idx,
+                intent.time,
+                intent.comment,
+                trailing_stop=intent.trailing_stop,
+                trail_activation=intent.trail_activation,
+                exit_after_bars=intent.exit_after_bars,
+                decision_id=decision_id,
+                requested_lots=requested_lots,
+            )
+        return self._place_pending(
+            intent.order_type,
+            intent.direction,
+            intent.price,
+            intent.stop_loss,
+            intent.take_profit,
+            intent.lots,
+            intent.bar_idx,
+            intent.expiry_bars,
+            intent.comment,
+            decision_id=decision_id,
+            requested_lots=requested_lots,
+        )
+
     def _place_pending(
         self, order_type: OrderType, direction: Direction,
         price: float, sl: float, tp: float, lots: float,
-        bar_idx: int, expiry_bars: int, comment: str
+        bar_idx: int, expiry_bars: int, comment: str,
+        decision_id: int = 0, requested_lots: float = 0.0,
     ) -> int:
         oid = self._next_id()
         self._pending_orders.append(PendingOrder(
@@ -305,6 +459,7 @@ class Backtester:
             entry_price=price, stop_loss=sl, take_profit=tp,
             lots=lots, opened_bar=bar_idx,
             expiry_bars=expiry_bars, comment=comment
+            , decision_id=decision_id, requested_lots=requested_lots or lots
         ))
         return oid
 
@@ -314,10 +469,13 @@ class Backtester:
         bar_idx: int, time: pd.Timestamp, comment: str = "",
         trailing_stop: float = 0.0, trail_activation: float = 0.0,
         exit_after_bars: int = 0,
+        decision_id: int = 0,
+        requested_lots: float = 0.0,
     ) -> int:
         pid = self._next_id()
         if direction == Direction.LONG:
             price += self.spread_pips
+        price = self._apply_entry_execution_price(direction, price)
         pos = Position(
             id=pid, direction=direction, entry_price=price,
             stop_loss=sl, take_profit=tp, lots=lots,
@@ -325,7 +483,9 @@ class Backtester:
             trailing_stop=trailing_stop,
             trail_activation=trail_activation,
             exit_after_bars=exit_after_bars,
-            comment=comment
+            comment=comment,
+            decision_id=decision_id,
+            requested_lots=requested_lots or lots,
         )
         self._open_positions.append(pos)
         if self.verbose:
@@ -338,6 +498,7 @@ class Backtester:
         bar_idx: int, time: pd.Timestamp,
         reason: CloseReason
     ):
+        exit_price = self._apply_exit_execution_price(pos.direction, exit_price)
         gross = self._calc_profit(pos, exit_price)
         comm  = self.commission_per_lot * pos.lots * 2
         trade = ClosedTrade(
@@ -348,7 +509,9 @@ class Backtester:
             opened_time=pos.opened_time, closed_time=time,
             close_reason=reason,
             gross_profit=gross, commission=comm, swap=0.0,
-            comment=pos.comment
+            comment=pos.comment,
+            decision_id=pos.decision_id,
+            requested_lots=pos.requested_lots,
         )
         self._closed_trades.append(trade)
         self._balance += trade.net_profit
@@ -432,6 +595,8 @@ class Backtester:
                     trailing_stop=trail_dist,
                     trail_activation=trail_act,
                     exit_after_bars=exit_after_bars,
+                    decision_id=order.decision_id,
+                    requested_lots=order.requested_lots,
                 )
 
     def _check_sl_tp(self, df: pd.DataFrame, i: int):

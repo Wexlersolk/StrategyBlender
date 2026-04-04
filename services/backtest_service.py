@@ -7,9 +7,11 @@ from pathlib import Path
 
 import pandas as pd
 
+from config import settings
 from engine.base_strategy import BaseStrategy
 from engine.backtester import Backtester
 from engine.data_loader import available_symbols, load_bars
+from engine.policy import OverlayPolicy
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -56,15 +58,22 @@ def run_backtest(
     date_to: str,
     overrides: dict | None = None,
     intrabar_steps: int = 1,
+    overlay_policy: OverlayPolicy | None = None,
+    execution_config: dict | None = None,
 ):
     df = load_bars(symbol, timeframe)
     intrabar_df = None
     if intrabar_steps > 1 and timeframe.upper() != "M1":
         intrabar_df = load_bars(symbol, "M1", date_from=date_from, date_to=date_to)
+    execution = execution_config or {}
     bt = Backtester(
         initial_capital=100_000,
         lot_value=getattr(strat_cls, "lot_value", 1.0),
         intrabar_steps=intrabar_steps,
+        overlay_policy=overlay_policy,
+        commission_per_lot=float(execution.get("commission_per_lot", settings.DEFAULT_COMMISSION_PER_LOT)),
+        spread_pips=float(execution.get("spread_pips", settings.DEFAULT_SPREAD_PIPS)),
+        slippage_pips=float(execution.get("slippage_pips", settings.DEFAULT_SLIPPAGE_PIPS)),
     )
     overrides = overrides or {}
     strategy = strat_cls(**{k: v for k, v in overrides.items() if k in strat_cls.params})
@@ -115,6 +124,7 @@ def backtest_result_payload(result) -> dict:
         "win_rate": float(result.win_rate),
         "num_months": int(len(monthly)),
         "num_trades": int(result.n_trades),
+        "num_decisions": int(len(result.decision_records)),
         "profit_factor": float(result.profit_factor),
         "max_drawdown_pct": float(result.max_drawdown[1]),
         "balance_dd_abs": float(result.balance_drawdown_maximal[0]),

@@ -1,36 +1,22 @@
 """
-Heuristic MQL5 -> strategytester5 Python converter.
+Heuristic MQL5 -> local Python review scaffold converter.
 
 This is intentionally conservative: it extracts parameters and function bodies,
-then emits a runnable `strategytester5` scaffold with translated stubs.
+then emits a local Python review scaffold with translated stubs.
 Complex MQL5 constructs still need manual review after conversion.
 """
 
 from __future__ import annotations
 
-import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
 
-TIMEFRAME_MAP = {
-    "M1": "TIMEFRAME_M1",
-    "M5": "TIMEFRAME_M5",
-    "M15": "TIMEFRAME_M15",
-    "M30": "TIMEFRAME_M30",
-    "H1": "TIMEFRAME_H1",
-    "H4": "TIMEFRAME_H4",
-    "D1": "TIMEFRAME_D1",
-    "W1": "TIMEFRAME_W1",
-    "MN1": "TIMEFRAME_MN1",
-}
-
-
 @dataclass
 class ConversionResult:
     strategy_name: str
-    python_source: str
+    review_source: str
     inputs: dict
     functions: list[str]
     warnings: list[str]
@@ -227,51 +213,26 @@ def convert_mql5_to_python(
         warnings.append("No MQL5 functions detected; emitted template-only scaffold.")
 
     if "OnTick" not in {name for name, _, _ in blocks}:
-        warnings.append("OnTick() was not found; generated on_tick() is a placeholder.")
+        warnings.append("OnTick() was not found; generated local review entrypoint is a placeholder.")
 
     python_lines = [
-        "import json",
-        "import logging",
-        "from pathlib import Path",
+        '"""',
+        "Auto-generated local review scaffold from MQL5 source.",
         "",
-        "from strategytester5.tester import StrategyTester, MetaTrader5 as mt5",
-        "from strategytester5.trade_classes.Trade import CTrade",
+        "This file is for inspection and manual adaptation inside StrategyBlender.",
+        "It is not a live-trading bridge and it is not intended to talk to MT5.",
+        '"""',
+        "",
+        "from __future__ import annotations",
         "",
         f"STRATEGY_NAME = {strategy_name!r}",
         f"SYMBOL = {symbol!r}",
-        f"TIMEFRAME = mt5.{TIMEFRAME_MAP.get(timeframe, 'TIMEFRAME_H1')}",
-        "MAGIC_NUMBER = 10012026",
-        "SLIPPAGE = 100",
+        f"TIMEFRAME = {timeframe!r}",
         "",
-        f"PARAMS = {json.dumps(params, indent=4, sort_keys=True)}",
+        f"PARAMS = {params!r}",
         "",
-        "BASE_DIR = Path(__file__).resolve().parent",
-        'TESTER_CONFIG_PATH = BASE_DIR / "tester.json"',
-        "",
-        "with TESTER_CONFIG_PATH.open('r', encoding='utf-8') as fh:",
-        "    tester_configs = json.load(fh)",
-        "",
-        "if not mt5.initialize():",
-        '    raise RuntimeError("Failed to initialize MT5. Make sure MT5 terminal is running.")',
-        "",
-        "tester = StrategyTester(",
-        '    tester_config=tester_configs["tester"],',
-        "    mt5_instance=mt5,",
-        "    logging_level=logging.INFO,",
-        '    broker_data_dir=tester_configs["tester"].get("broker_data_dir", "ICMarketsSC-Demo"),',
-        ")",
-        "",
-        "m_trade = CTrade(",
-        "    simulator=tester,",
-        "    magic_number=MAGIC_NUMBER,",
-        "    filling_type_symbol=SYMBOL,",
-        "    deviation_points=SLIPPAGE,",
-        ")",
-        "",
-        "def pos_exists(magic: int, position_type: int) -> bool:",
-        "    for position in tester.positions_get():",
-        "        if position.type == position_type and position.magic == magic:",
-        "            return True",
+        "def pos_exists(*_args, **_kwargs) -> bool:",
+        '    """Compatibility stub retained for manual review of converted control flow."""',
         "    return False",
         "",
     ]
@@ -292,20 +253,24 @@ def convert_mql5_to_python(
 
     if "OnTick" not in function_names:
         python_lines.extend([
-            "def on_tick():",
+            "def on_tick_review():",
             "    # Manual implementation required: no OnTick() was found in the source EA.",
             "    pass",
             "",
         ])
 
     python_lines.extend([
+        "def main():",
+        "    # Manual review entrypoint only; StrategyBlender executes generated engine strategies instead.",
+        "    if 'on_init' in globals():",
+        "        on_init()",
+        "    if 'on_tick' in globals():",
+        "        on_tick()",
+        "    elif 'on_tick_review' in globals():",
+        "        on_tick_review()",
+        "",
         "if __name__ == '__main__':",
-        "    try:",
-        "        if 'on_init' in globals():",
-        "            on_init()",
-        "        tester.OnTick(ontick_func=on_tick)",
-        "    finally:",
-        "        mt5.shutdown()",
+        "    main()",
         "",
     ])
 
@@ -319,7 +284,7 @@ def convert_mql5_to_python(
 
     return ConversionResult(
         strategy_name=strategy_name,
-        python_source="\n".join(python_lines),
+        review_source="\n".join(python_lines),
         inputs=params,
         functions=function_names,
         warnings=warnings,
@@ -342,5 +307,5 @@ def convert_file(
         timeframe=timeframe,
     )
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(result.python_source, encoding="utf-8")
+    out_path.write_text(result.review_source, encoding="utf-8")
     return result

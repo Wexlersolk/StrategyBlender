@@ -2,7 +2,7 @@
 ui/views/backtests.py
 
 Strategy conversion workspace:
-- shows generated strategytester5 Python for uploaded MT5 EAs
+- shows generated local Python review scaffolds for uploaded MT5 EAs
 - allows exporting converted files
 - runs local backtests on generated engine strategies using exported MT5 data
 """
@@ -66,8 +66,8 @@ def _render_conversion_tab(eas: dict):
     st.info(
         "**Step 1** — Upload your `.mq5` EA in `EA Manager`.\n\n"
         "**Step 2** — StrategyBlender generates two Python artifacts: a local engine strategy "
-        "for fast backtests and a `strategytester5` scaffold for MT5-side orchestration.\n\n"
-        "**Step 3** — Run the local backtest below against the MT5 export data already stored in "
+        "for fast backtests and a review scaffold that mirrors the original MQL structure.\n\n"
+        "**Step 3** — Run the local backtest below against the exported market data already stored in "
         "`data/exports/MT5 data export/`.",
         icon="ℹ️",
     )
@@ -88,7 +88,7 @@ def _render_conversion_tab(eas: dict):
         format_func=lambda x: ea_options[x],
     )
     ea = eas[selected]
-    python_source = ea.get("python_source", "")
+    review_source = ea.get("review_source") or ea.get("python_source", "")
     engine_source = ea.get("engine_source", "")
 
     col1, col2, col3 = st.columns(3)
@@ -159,24 +159,24 @@ def _render_conversion_tab(eas: dict):
     with st.expander("Generated local engine strategy", expanded=False):
         st.code(engine_source or "# No generated engine strategy found", language="python")
 
-    with st.expander("Generated strategytester5 scaffold", expanded=False):
-        st.code(python_source or "# No generated Python found", language="python")
+    with st.expander("Generated Python review scaffold", expanded=False):
+        st.code(review_source or "# No generated review scaffold found", language="python")
 
     filename = f"{ea['name']}.py"
     col_save, col_download = st.columns(2)
     with col_save:
-        if st.button("Save strategytester5 file", type="secondary", use_container_width=True):
+        if st.button("Save review scaffold", type="secondary", use_container_width=True):
             GENERATED_DIR.mkdir(parents=True, exist_ok=True)
             output_path = GENERATED_DIR / filename
-            output_path.write_text(python_source, encoding="utf-8")
-            st.session_state["eas"][selected]["python_path"] = str(output_path)
+            output_path.write_text(review_source, encoding="utf-8")
+            st.session_state["eas"][selected]["review_path"] = str(output_path)
             autosave()
             st.success(f"Saved `{output_path}`", icon="✅")
 
     with col_download:
         st.download_button(
-            "Download strategytester5 Python",
-            data=python_source.encode("utf-8"),
+            "Download review scaffold",
+            data=review_source.encode("utf-8"),
             file_name=filename,
             mime="text/x-python",
             use_container_width=True,
@@ -210,10 +210,10 @@ def _load_generated_strategy_class(ea: dict):
     )
     paths = persist_converted_ea(refreshed, ea["name"])
     ea["params"] = refreshed.params
-    ea["python_source"] = refreshed.strategytester_source
+    ea["review_source"] = refreshed.review_source
     ea["engine_source"] = refreshed.engine_source
     ea["strategy_path"] = paths["engine_path"]
-    ea["python_path"] = paths["strategytester_path"]
+    ea["review_path"] = paths["review_path"]
     ea["strategy_module"] = refreshed.strategy_module
     ea["strategy_class"] = refreshed.strategy_class
     ea["conversion_warnings"] = refreshed.warnings

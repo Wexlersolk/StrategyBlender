@@ -11,11 +11,13 @@ import pandas as pd
 from dataclasses import dataclass
 from typing import List
 from engine.position import ClosedTrade, CloseReason
+from engine.policy import DecisionRecord
 
 
 @dataclass
 class BacktestResults:
     trades:        List[ClosedTrade]
+    decision_records: List[DecisionRecord]
     initial_capital: float
     symbol:        str
     timeframe:     str
@@ -191,6 +193,7 @@ class BacktestResults:
             "expected_payoff":     round(self.expected_payoff, 2),
             "max_consec_wins":     self.max_consecutive_wins,
             "max_consec_losses":   self.max_consecutive_losses,
+            "n_decisions":         len(self.decision_records),
         }
 
     def print_summary(self):

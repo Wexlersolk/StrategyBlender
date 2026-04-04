@@ -41,10 +41,15 @@ def _dict_to_df(d: dict | None) -> pd.DataFrame:
         return frame
 
     raw_index = pd.Index(frame.index)
-    parsed_index = pd.to_datetime(raw_index, errors="coerce")
-    valid_ratio = float(parsed_index.notna().mean()) if len(parsed_index) else 0.0
-    if valid_ratio >= 0.8:
-        frame.index = pd.DatetimeIndex(parsed_index)
+    raw_strings = raw_index.astype(str)
+    looks_datetime_like = (
+        len(raw_strings) > 0
+        and float(pd.Series(raw_strings).str.contains(r"[-:/T ]", regex=True).mean()) >= 0.8
+    )
+    if looks_datetime_like:
+        parsed_index = pd.to_datetime(raw_index, errors="coerce")
+        valid_ratio = float(parsed_index.notna().mean()) if len(parsed_index) else 0.0
+        frame.index = pd.DatetimeIndex(parsed_index) if valid_ratio >= 0.8 else raw_index
     else:
         frame.index = raw_index
     return frame
@@ -76,6 +81,38 @@ def _deserialise_results(data: dict) -> dict:
     return out
 
 
+def _serialise_walk_forward_report(report: dict | None) -> dict | None:
+    if not isinstance(report, dict):
+        return None
+    return {
+        "ea_id": report.get("ea_id"),
+        "portfolio_ids": report.get("portfolio_ids", []),
+        "run_id": report.get("run_id", ""),
+        "title": report.get("title", ""),
+        "export_dir": report.get("export_dir", ""),
+        "files": report.get("files", {}),
+        "metadata": report.get("metadata", {}),
+        "split_metrics": _df_to_dict(report.get("split_metrics")),
+        "aggregate_metrics": _df_to_dict(report.get("aggregate_metrics")),
+    }
+
+
+def _deserialise_walk_forward_report(data: dict | None) -> dict | None:
+    if not isinstance(data, dict):
+        return None
+    return {
+        "ea_id": data.get("ea_id"),
+        "portfolio_ids": data.get("portfolio_ids", []),
+        "run_id": data.get("run_id", ""),
+        "title": data.get("title", ""),
+        "export_dir": data.get("export_dir", ""),
+        "files": data.get("files", {}),
+        "metadata": data.get("metadata", {}),
+        "split_metrics": _dict_to_df(data.get("split_metrics")),
+        "aggregate_metrics": _dict_to_df(data.get("aggregate_metrics")),
+    }
+
+
 def save_workspace_profile(state: dict):
     training_artifact = state.get("training_artifact")
     if isinstance(training_artifact, dict):
@@ -91,8 +128,15 @@ def save_workspace_profile(state: dict):
         "model_trained": state.get("model_trained", False),
         "training_log": state.get("training_log", []),
         "training_artifact": training_artifact,
+        "ai_dataset_id": state.get("_ai_dataset_id", ""),
+        "ai_training_artifact_id": state.get("_ai_training_artifact_id", ""),
+        "ai_model_wfo_run_id": state.get("_ai_model_wfo_run_id", ""),
         "schedule_path": state.get("schedule_path", ""),
         "ai_saved_reports": state.get("ai_saved_reports", []),
+        "ai_model_wfo": _serialise_walk_forward_report(state.get("_ai_model_wfo")),
+        "experiment_registry": state.get("experiment_registry", []),
+        "job_registry": state.get("job_registry", []),
+        "auth_user_id": state.get("auth_user_id", ""),
     }
     raw = json.dumps(payload, default=str).encode()
     enc = Fernet(_get_key()).encrypt(raw)
@@ -113,6 +157,15 @@ def load_workspace_profile() -> dict | None:
         payload["ai_experiment_results"] = _deserialise_results(
             payload.get("ai_experiment_results", {})
         )
+        payload["ai_model_wfo"] = _deserialise_walk_forward_report(
+            payload.get("ai_model_wfo")
+        )
+        payload["ai_dataset_id"] = payload.get("ai_dataset_id", "")
+        payload["ai_training_artifact_id"] = payload.get("ai_training_artifact_id", "")
+        payload["ai_model_wfo_run_id"] = payload.get("ai_model_wfo_run_id", "")
+        payload["experiment_registry"] = payload.get("experiment_registry", [])
+        payload["job_registry"] = payload.get("job_registry", [])
+        payload["auth_user_id"] = payload.get("auth_user_id", "")
         return payload
     except Exception:
         return None

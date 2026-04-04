@@ -118,10 +118,10 @@ def _render_load_tab():
                 "timeframe":  timeframe,
                 "params":     conversion.params,
                 "source":     source,
-                "python_source": conversion.strategytester_source,
+                "review_source": conversion.review_source,
                 "engine_source": conversion.engine_source,
                 "strategy_path": paths["engine_path"],
-                "python_path": paths["strategytester_path"],
+                "review_path": paths["review_path"],
                 "strategy_module": conversion.strategy_module,
                 "strategy_class": conversion.strategy_class,
                 "conversion_warnings": conversion.warnings,
@@ -132,7 +132,7 @@ def _render_load_tab():
             autosave()
             success_box(
                 f"Added **{ea_name}** on {symbol} {timeframe} and generated a "
-                "local backtest strategy plus a `strategytester5` scaffold."
+                "local backtest strategy plus a Python review scaffold."
             )
             st.rerun()
 
@@ -189,10 +189,10 @@ def _render_manage_tab():
                     st.session_state["eas"][ea_id]["symbol"]    = new_symbol
                     st.session_state["eas"][ea_id]["timeframe"] = new_tf
                     st.session_state["eas"][ea_id]["params"] = updated.params
-                    st.session_state["eas"][ea_id]["python_source"] = updated.strategytester_source
+                    st.session_state["eas"][ea_id]["review_source"] = updated.review_source
                     st.session_state["eas"][ea_id]["engine_source"] = updated.engine_source
                     st.session_state["eas"][ea_id]["strategy_path"] = paths["engine_path"]
-                    st.session_state["eas"][ea_id]["python_path"] = paths["strategytester_path"]
+                    st.session_state["eas"][ea_id]["review_path"] = paths["review_path"]
                     st.session_state["eas"][ea_id]["strategy_module"] = updated.strategy_module
                     st.session_state["eas"][ea_id]["strategy_class"] = updated.strategy_class
                     st.session_state["eas"][ea_id]["conversion_warnings"] = updated.warnings

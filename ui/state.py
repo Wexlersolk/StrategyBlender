@@ -10,7 +10,7 @@ import streamlit as st
 def init_state():
     defaults = {
         # EA manager
-        "eas":                {},     # { ea_id: { name, symbol, timeframe, source, python_source, engine_source, ... } }
+        "eas":                {},     # { ea_id: { name, symbol, timeframe, source, review_source, engine_source, ... } }
         "ea_counter":         0,
 
         # Backtests
@@ -23,6 +23,14 @@ def init_state():
         "training_artifact":  None,
         "schedule_path":      "",
         "ai_saved_reports":   [],
+        "_ai_model_wfo":      None,
+        "_ai_model_wfo_run_id": "",
+        "_ai_dataset_id":     "",
+        "_ai_training_artifact_id": "",
+        "experiment_registry": [],
+        "job_registry":       [],
+        "auth_user_id":       "",
+        "auth_session_token": "",
 
         # Navigation
         "page":               "Dashboard",

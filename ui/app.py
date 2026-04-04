@@ -10,6 +10,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import streamlit as st
+from research import auth
 from ui.state import init_state
 from ui.profile_manager import (
     load_workspace_profile
@@ -55,6 +56,13 @@ st.markdown("""
 
 def main():
     init_state()
+    auth.bootstrap_default_admin()
+    _bind_auth_context()
+    if not st.session_state.get("auth_user_id"):
+        with st.sidebar:
+            _render_login()
+        st.info("Sign in to access persisted research jobs and experiments.")
+        return
     if not st.session_state.get("_workspace_loaded"):
         _load_workspace_state()
         st.session_state["_workspace_loaded"] = True
@@ -90,6 +98,7 @@ def _render_sidebar():
         "EA Manager":  "🤖",
         "Backtests":   "▶️",
         "AI Training": "🧠",
+        "Experiments": "🧪",
         "Research":    "🔬",
     }
     for page_name, icon in pages.items():
@@ -104,6 +113,16 @@ def _render_sidebar():
             st.rerun()
 
     st.markdown("---")
+
+    user_id = st.session_state.get("auth_user_id", "")
+    st.caption(f"Signed in as `{user_id}`")
+    if st.button("Sign Out", key="sign_out", use_container_width=True, type="secondary"):
+        token = st.session_state.get("auth_session_token", "")
+        auth.revoke_session(token)
+        st.session_state["auth_user_id"] = ""
+        st.session_state["auth_session_token"] = ""
+        auth.bind_user(None)
+        st.rerun()
 
     # ── Status summary ────────────────────────────────────────────────────────
     n_eas    = len(st.session_state.get("eas", {}))
@@ -129,8 +148,46 @@ def _load_workspace_state():
     st.session_state["model_trained"] = profile.get("model_trained", False)
     st.session_state["training_log"] = profile.get("training_log", [])
     st.session_state["training_artifact"] = profile.get("training_artifact")
+    st.session_state["_ai_dataset_id"] = profile.get("ai_dataset_id", "")
+    st.session_state["_ai_training_artifact_id"] = profile.get("ai_training_artifact_id", "")
     st.session_state["schedule_path"] = profile.get("schedule_path", "")
     st.session_state["ai_saved_reports"] = profile.get("ai_saved_reports", [])
+    st.session_state["_ai_model_wfo"] = profile.get("ai_model_wfo")
+    st.session_state["_ai_model_wfo_run_id"] = profile.get("ai_model_wfo_run_id", "")
+    st.session_state["experiment_registry"] = profile.get("experiment_registry", [])
+    st.session_state["job_registry"] = profile.get("job_registry", [])
+    if not st.session_state.get("auth_user_id"):
+        st.session_state["auth_user_id"] = profile.get("auth_user_id", "")
+
+
+def _bind_auth_context():
+    token = st.session_state.get("auth_session_token", "")
+    user_id = st.session_state.get("auth_user_id", "")
+    if token:
+        session = auth.resolve_session(token)
+        if session:
+            user_id = session["user_id"]
+            st.session_state["auth_user_id"] = user_id
+        else:
+            st.session_state["auth_user_id"] = ""
+            st.session_state["auth_session_token"] = ""
+            user_id = ""
+    auth.bind_user(user_id or None)
+
+
+def _render_login():
+    st.markdown("### Sign In")
+    username = st.text_input("User ID", key="login_user_id")
+    password = st.text_input("Password", type="password", key="login_password")
+    if st.button("Sign In", key="login_submit", use_container_width=True, type="primary"):
+        session = auth.authenticate_user(user_id=username, password=password)
+        if not session:
+            st.error("Invalid credentials.")
+            return
+        st.session_state["auth_user_id"] = session["user_id"]
+        st.session_state["auth_session_token"] = session["token"]
+        auth.bind_user(session["user_id"])
+        st.rerun()
 
 
 # ── Page router ───────────────────────────────────────────────────────────────
@@ -149,6 +206,9 @@ def _render_page():
         render()
     elif page == "AI Training":
         from ui.views.ai_training import render
+        render()
+    elif page == "Experiments":
+        from ui.views.experiments import render
         render()
     elif page == "Research":
         from ui.views.research import render

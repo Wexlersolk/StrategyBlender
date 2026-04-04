@@ -1,5 +1,5 @@
 """
-Batch MQL5 -> strategytester5 converter.
+Batch MQL5 -> local Python review scaffold converter.
 
 Usage:
     python scripts/parse_backtest.py

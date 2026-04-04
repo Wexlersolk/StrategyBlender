@@ -58,7 +58,7 @@ def normalize_symbol(symbol: str) -> str:
 @dataclass
 class ConvertedEA:
     params: dict
-    strategytester_source: str
+    review_source: str
     engine_source: str
     warnings: list[str]
     functions: list[str]
@@ -1014,7 +1014,7 @@ def convert_ea_source(
     timeframe: str,
     ea_id: str | None = None,
 ) -> ConvertedEA:
-    strategytester_result: ConversionResult = convert_mql5_to_python(
+    review_result: ConversionResult = convert_mql5_to_python(
         source=source,
         strategy_name=strategy_name,
         symbol=symbol,
@@ -1028,17 +1028,17 @@ def convert_ea_source(
         class_name=class_name,
         symbol=symbol,
         timeframe=timeframe,
-        params=strategytester_result.inputs,
+        params=review_result.inputs,
         mql_source=source,
     )
 
     strategy_path = ENGINE_STRATEGY_DIR / f"{slug_base}.py"
     return ConvertedEA(
-        params=strategytester_result.inputs,
-        strategytester_source=strategytester_result.python_source,
+        params=review_result.inputs,
+        review_source=review_result.review_source,
         engine_source=engine_source,
-        warnings=[*strategytester_result.warnings, *engine_warnings],
-        functions=strategytester_result.functions,
+        warnings=[*review_result.warnings, *engine_warnings],
+        functions=review_result.functions,
         strategy_path=str(strategy_path),
         strategy_module=f"strategies.generated.{slug_base}",
         strategy_class=class_name,
@@ -1050,10 +1050,10 @@ def persist_converted_ea(result: ConvertedEA, strategy_name: str):
     CONVERTED_DIR.mkdir(parents=True, exist_ok=True)
     ENGINE_STRATEGY_DIR.mkdir(parents=True, exist_ok=True)
 
-    strategytester_path = CONVERTED_DIR / f"{slugify(strategy_name)}.py"
-    strategytester_path.write_text(result.strategytester_source, encoding="utf-8")
+    review_path = CONVERTED_DIR / f"{slugify(strategy_name)}.py"
+    review_path.write_text(result.review_source, encoding="utf-8")
     Path(result.strategy_path).write_text(result.engine_source, encoding="utf-8")
     return {
-        "strategytester_path": str(strategytester_path),
+        "review_path": str(review_path),
         "engine_path": result.strategy_path,
     }

@@ -2,8 +2,8 @@
 
 Local-first platform for:
 - loading MT5 `.mq5` strategies
-- converting them into Python strategy artifacts
-- backtesting them on exported MT5 market data
+- converting them into local Python strategy artifacts
+- backtesting them on exported market data
 - training and comparing AI workflows on the resulting backtests
 
 ## Current Flow
@@ -13,9 +13,18 @@ Local-first platform for:
    `streamlit run ui/app.py`
 3. In `EA Manager`, load a strategy and generate:
    - a local engine strategy for research/backtesting
-   - a `strategytester5` scaffold for future MT5-side orchestration
+   - a Python review scaffold mirroring the original MQL structure
 4. In `Backtests`, run the generated strategy on data from:
    `data/exports/MT5 data export/`
+
+## Research Runtime
+
+- Persisted research jobs, datasets, artifacts, and experiment manifests are stored under `data/research_state/`.
+- The research worker now runs as a separate local process pool, not inside the Streamlit request loop.
+- The UI requires sign-in before accessing persisted research state.
+- Default bootstrap credentials are controlled by:
+  `STRATEGYBLENDER_BOOTSTRAP_USER`
+  `STRATEGYBLENDER_BOOTSTRAP_PASSWORD`
 
 ## Data
 
@@ -43,9 +52,9 @@ Minute data is resampled in code for `H1`, `H4`, and `D1` backtests.
 - `data/` contains exported market data and compatibility loaders
 - `mine/` is the local drop folder for raw `.mq5` strategy files
 - `scripts/` contains console utilities
+- `docs/conversion_support.md` documents supported conversion patterns
 
 ## Notes
 
-- MT5 login is no longer part of the UI.
-- MT5 is only relevant for future console-side data download workflows.
+- This is a local research tool; MT5 bridge/orchestration code has been retired.
 - Conversion of large StrategyQuant EAs is heuristic and may still require manual review.

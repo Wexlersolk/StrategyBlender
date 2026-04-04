@@ -45,6 +45,8 @@ class PendingOrder:
     opened_bar:  int            # bar index when order was placed
     expiry_bars: int  = 1       # cancel after N bars (0 = GTC)
     comment:     str  = ""
+    decision_id: int  = 0
+    requested_lots: float = 0.0
 
 
 @dataclass
@@ -62,6 +64,8 @@ class Position:
     trail_activation: float = 0.0  # profit needed before trailing activates
     exit_after_bars: int = 0
     comment:       str   = ""
+    decision_id:   int   = 0
+    requested_lots: float = 0.0
 
 
 @dataclass
@@ -83,6 +87,8 @@ class ClosedTrade:
     commission:   float
     swap:         float
     comment:      str = ""
+    decision_id:  int = 0
+    requested_lots: float = 0.0
 
     @property
     def net_profit(self) -> float:
