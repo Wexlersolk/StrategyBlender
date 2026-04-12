@@ -1,0 +1,33 @@
+{
+  "name": "Targeted Search 01",
+  "symbol": "XAUUSD",
+  "timeframe": "H1",
+  "entry_archetype": "ema_reclaim",
+  "volatility_filter": "atr_expansion",
+  "session_filter": "london_ny",
+  "stop_model": "atr",
+  "target_model": "fixed_rr",
+  "exit_model": "atr_time_stop",
+  "params": {
+    "HighestPeriod": 24,
+    "LowestPeriod": 24,
+    "ATRPeriod": 21,
+    "FastEMA": 13,
+    "SlowEMA": 55,
+    "BBWRPeriod": 24,
+    "BBWRMin": 0.025,
+    "EntryBufferATR": 0.15,
+    "StopLossATR": 1.1,
+    "ProfitTargetATR": 3.6,
+    "TrailATR": 1.1,
+    "ExitAfterBars": 12,
+    "PullbackLookback": 5,
+    "PullbackATR": 0.4,
+    "BreakEvenATR": 1.1,
+    "TimeStopATR": 0.3,
+    "MaxDistancePct": 3.5,
+    "mmLots": 1.0
+  },
+  "min_bars": 40,
+  "lot_value": 100.0
+}

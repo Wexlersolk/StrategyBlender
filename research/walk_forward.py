@@ -21,7 +21,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from dataclasses import dataclass
-from typing import List, Callable
+from typing import Iterable, Iterator, List, Callable
 from engine.backtester import Backtester
 from engine.base_strategy import BaseStrategy
 from engine.results import BacktestResults
@@ -118,6 +118,7 @@ def run_wfo(
     optimize_by:  str = "sharpe_ratio",
     backtester_kwargs: dict = None,
     n_top_params: int = 1,
+    intrabar_df: pd.DataFrame | None = None,
 ) -> WFOResults:
     """
     Run Walk-Forward Optimization.
@@ -139,8 +140,8 @@ def run_wfo(
     if backtester_kwargs is None:
         backtester_kwargs = {}
 
-    param_combinations = _build_param_grid(param_grid)
-    print(f"WFO: {len(param_combinations)} parameter combinations to test per window")
+    param_combination_count = _param_grid_size(param_grid)
+    print(f"WFO: {param_combination_count} parameter combinations to test per window")
 
     windows = []
     all_oos_trades = []
@@ -169,6 +170,11 @@ def run_wfo(
 
         train_df = df[(df.index >= train_start) & (df.index < train_end)]
         test_df  = df[(df.index >= test_start)  & (df.index < test_end)]
+        train_intrabar_df = None
+        test_intrabar_df = None
+        if intrabar_df is not None:
+            train_intrabar_df = intrabar_df[(intrabar_df.index >= train_start) & (intrabar_df.index < train_end)]
+            test_intrabar_df = intrabar_df[(intrabar_df.index >= test_start) & (intrabar_df.index < test_end)]
 
         if len(train_df) < 100 or len(test_df) < 20:
             test_start += step
@@ -176,14 +182,14 @@ def run_wfo(
             continue
 
         best_params, train_results = _optimise_window(
-            strategy_class, train_df, param_combinations,
-            optimize_by, backtester_kwargs, n_top_params
+            strategy_class, train_df, param_grid,
+            optimize_by, backtester_kwargs, n_top_params, intrabar_df=train_intrabar_df
         )
 
         # ── Out-of-sample test ────────────────────────────────────────────────
         bt  = Backtester(**backtester_kwargs)
         strat = strategy_class(**best_params)
-        test_results = bt.run(strat, test_df.copy())
+        test_results = bt.run(strat, test_df.copy(), intrabar_df=test_intrabar_df)
 
         print(f"    IS  Sharpe: {train_results.sharpe_ratio:.2f} | "
               f"OOS Sharpe: {test_results.sharpe_ratio:.2f} | "
@@ -211,41 +217,51 @@ def run_wfo(
     )
 
 
-def _build_param_grid(param_grid: dict) -> list[dict]:
-    """Build all combinations from a parameter grid."""
+def _param_grid_size(param_grid: dict) -> int:
+    size = 1
+    for values in param_grid.values():
+        size *= max(1, len(values))
+    return size
+
+
+def _iter_param_grid(param_grid: dict) -> Iterator[dict]:
+    """Yield parameter combinations from a grid without materializing all of them."""
     import itertools
     keys   = list(param_grid.keys())
     values = list(param_grid.values())
-    combos = []
     for combo in itertools.product(*values):
-        combos.append(dict(zip(keys, combo)))
-    return combos
+        yield dict(zip(keys, combo))
 
 
 def _optimise_window(
     strategy_class, df: pd.DataFrame,
-    param_combinations: list[dict],
+    param_grid: dict[str, list],
     optimize_by: str,
     backtester_kwargs: dict,
     n_top: int,
+    intrabar_df: pd.DataFrame | None = None,
 ) -> tuple[dict, BacktestResults]:
     """Find the best parameter set on the training data."""
-    results_list = []
+    results_list: list[tuple[float, dict, BacktestResults]] = []
+    fallback_params = None
 
-    for params in param_combinations:
+    for params in _iter_param_grid(param_grid):
+        if fallback_params is None:
+            fallback_params = dict(params)
         try:
             bt    = Backtester(**backtester_kwargs)
             strat = strategy_class(**params)
-            r     = bt.run(strat, df.copy())
+            r     = bt.run(strat, df.copy(), intrabar_df=intrabar_df)
             score = getattr(r, optimize_by, r.sharpe_ratio)
             results_list.append((score, params, r))
+            results_list.sort(key=lambda x: x[0], reverse=True)
+            if len(results_list) > max(1, int(n_top)):
+                results_list = results_list[: max(1, int(n_top))]
         except Exception:
             continue
 
     if not results_list:
-        return param_combinations[0], None
-
-    results_list.sort(key=lambda x: x[0], reverse=True)
+        return fallback_params or {}, None
 
     if n_top == 1:
         return results_list[0][1], results_list[0][2]
@@ -263,5 +279,5 @@ def _optimise_window(
 
     bt    = Backtester(**backtester_kwargs)
     strat = strategy_class(**avg_params)
-    r     = bt.run(strat, df.copy())
+    r     = bt.run(strat, df.copy(), intrabar_df=intrabar_df)
     return avg_params, r

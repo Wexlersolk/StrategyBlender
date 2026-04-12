@@ -1,0 +1,27 @@
+{
+  "label": "SQX USDJPY VWAP WT",
+  "description": "Native version of the existing USDJPY EMA/VWAP/WaveTrend family.",
+  "template": "sqx_usdjpy_vwap_wt",
+  "payload": {
+    "name": "SQX USDJPY VWAP WT",
+    "symbol": "USDJPY",
+    "timeframe": "H4",
+    "params": {
+      "EMAPeriod1": 20,
+      "VWAPPeriod1": 77,
+      "WaveTrendChannel": 9,
+      "WaveTrendAverage": 60,
+      "IndicatorCrsMAPrd1": 35,
+      "IndicatorCrsMAPrd2": 31,
+      "PriceEntryMult1": 0.3,
+      "ExitAfterBars1": 14,
+      "ProfitTargetCoef1": 3.0,
+      "StopLossCoef1": 2.8,
+      "ATRPeriod1": 19,
+      "ATRPeriod2": 14,
+      "HighestPeriod": 20,
+      "mmLots": 1.0
+    },
+    "lot_value": 1.0
+  }
+}

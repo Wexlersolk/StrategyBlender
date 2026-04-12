@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from research.experiment_registry import get_experiment_record, save_overlay_snapshot
 from research.overlay_evaluation import evaluate_portfolio_overlay_walk_forward
 from research.state_store import load_dataset_snapshot, load_job, save_audit_event, save_job
+from services.native_strategy_lab import evaluate_batch_run, run_batch_generation, run_generator_session
 from ui.views import ai_training
 
 
@@ -150,6 +151,100 @@ def run_overlay_rerun_job(job: dict, reporter: JobReporter) -> dict:
     return snapshot
 
 
+def run_native_batch_generation_job(job: dict, reporter: JobReporter) -> dict:
+    payload = dict(job.get("payload", {}) or {})
+    template_name = str(payload.get("template_name", ""))
+    base_payload = dict(payload.get("base_payload", {}) or {})
+    mutation_space = dict(payload.get("mutation_space", {}) or {})
+    if not template_name:
+        raise ValueError("Batch job is missing template_name.")
+    if not mutation_space:
+        raise ValueError("Batch job is missing mutation_space.")
+
+    reporter.progress(5.0, stage="validating", message=f"Validated native batch inputs for {template_name}.")
+
+    def _progress(progress_fraction: float, stage: str, message: str) -> None:
+        reporter.check_cancelled()
+        reporter.progress(10.0 + max(0.0, min(1.0, float(progress_fraction))) * 85.0, stage=stage, message=message)
+
+    run_record = run_batch_generation(
+        template_name=template_name,
+        base_payload=base_payload,
+        mutation_space=mutation_space,
+        date_from=str(payload.get("date_from", "")),
+        date_to=str(payload.get("date_to", "")),
+        limit=int(payload.get("limit", 25)),
+        search_mode=str(payload.get("search_mode", "grid")),
+        promotion_policy=dict(payload.get("promotion_policy", {}) or {}),
+        include_structural_mutations=bool(payload.get("include_structural_mutations", True)),
+        progress_callback=_progress,
+    )
+    reporter.progress(100.0, stage="saved", message=f"Saved native batch {run_record['batch_id']}.")
+    return {"run_id": run_record["batch_id"], "batch_id": run_record["batch_id"]}
+
+
+def run_native_batch_retest_job(job: dict, reporter: JobReporter) -> dict:
+    payload = dict(job.get("payload", {}) or {})
+    batch_id = str(payload.get("batch_id", ""))
+    if not batch_id:
+        raise ValueError("Retest job is missing batch_id.")
+    reporter.progress(5.0, stage="validating", message=f"Validated retest inputs for {batch_id}.")
+
+    def _progress(progress_fraction: float, stage: str, message: str) -> None:
+        reporter.check_cancelled()
+        reporter.progress(10.0 + max(0.0, min(1.0, float(progress_fraction))) * 85.0, stage=stage, message=message)
+
+    run_record = evaluate_batch_run(
+        batch_id,
+        date_from=str(payload.get("date_from", "")),
+        date_to=str(payload.get("date_to", "")),
+        top_n=int(payload["top_n"]) if payload.get("top_n") else None,
+        run_mc=bool(payload.get("run_mc", False)),
+        run_wfo_checks=bool(payload.get("run_wfo_checks", False)),
+        intrabar_steps=int(payload.get("intrabar_steps", 1)),
+        progress_callback=_progress,
+    )
+    reporter.progress(100.0, stage="saved", message=f"Saved retest batch {run_record['batch_id']}.")
+    return {"run_id": run_record["batch_id"], "batch_id": run_record["batch_id"]}
+
+
+def run_native_generator_job(job: dict, reporter: JobReporter) -> dict:
+    payload = dict(job.get("payload", {}) or {})
+    template_name = str(payload.get("template_name", ""))
+    base_payload = dict(payload.get("base_payload", {}) or {})
+    mutation_space = dict(payload.get("mutation_space", {}) or {})
+    if not template_name:
+        raise ValueError("Generator job is missing template_name.")
+    if not mutation_space:
+        raise ValueError("Generator job is missing mutation_space.")
+    reporter.progress(5.0, stage="validating", message=f"Validated generator inputs for {template_name}.")
+
+    def _progress(progress_fraction: float, stage: str, message: str) -> None:
+        reporter.check_cancelled()
+        reporter.progress(10.0 + max(0.0, min(1.0, float(progress_fraction))) * 85.0, stage=stage, message=message)
+
+    run_record = run_generator_session(
+        template_name=template_name,
+        base_payload=base_payload,
+        mutation_space=mutation_space,
+        date_from=str(payload.get("date_from", "")),
+        date_to=str(payload.get("date_to", "")),
+        max_candidates=int(payload.get("max_candidates", 500)),
+        run_mc=bool(payload.get("run_mc", False)),
+        run_wfo_checks=bool(payload.get("run_wfo_checks", False)),
+        intrabar_steps=int(payload.get("intrabar_steps", 1)),
+        include_structural_mutations=bool(payload.get("include_structural_mutations", True)),
+        discovery_mode=str(payload.get("discovery_mode", "conservative")),
+        random_seed=int(payload.get("random_seed", 42)),
+        progress_callback=_progress,
+    )
+    reporter.progress(100.0, stage="saved", message=f"Saved generator run {run_record['run_id']}.")
+    return {"run_id": run_record["run_id"]}
+
+
 JOB_HANDLERS = {
     "overlay_rerun": run_overlay_rerun_job,
+    "native_batch_generation": run_native_batch_generation_job,
+    "native_batch_retest": run_native_batch_retest_job,
+    "native_generator": run_native_generator_job,
 }

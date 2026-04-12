@@ -9,6 +9,9 @@ Strategy conversion workspace:
 
 from pathlib import Path
 
+import importlib
+import sys
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -19,6 +22,7 @@ from ui.state import autosave
 from services.backtest_service import (
     available_backtest_symbols,
     backtest_result_payload,
+    default_execution_config,
     run_backtest,
 )
 from services.conversion_service import convert_ea_source, normalize_symbol, persist_converted_ea
@@ -64,10 +68,11 @@ def render():
 def _render_conversion_tab(eas: dict):
     st.markdown("#### Conversion and execution flow")
     st.info(
-        "**Step 1** — Upload your `.mq5` EA in `EA Manager`.\n\n"
-        "**Step 2** — StrategyBlender generates two Python artifacts: a local engine strategy "
-        "for fast backtests and a review scaffold that mirrors the original MQL structure.\n\n"
-        "**Step 3** — Run the local backtest below against the exported market data already stored in "
+        "**MT5 path** — Upload your `.mq5` EA in `EA Manager` and StrategyBlender converts it into "
+        "local Python artifacts.\n\n"
+        "**Native Python path** — Use `Strategy Builder` to generate a strategy family directly from "
+        "templates and presets.\n\n"
+        "**Execution** — Run either type below against the local market data already stored in "
         "`data/exports/MT5 data export/`.",
         icon="ℹ️",
     )
@@ -132,10 +137,62 @@ def _render_conversion_tab(eas: dict):
         key=f"intrabar_{selected}",
         help="Replays real minute bars inside each higher-timeframe candle when M1 export data is available.",
     )
+    default_execution = default_execution_config(run_symbol)
+    st.markdown("##### Execution model")
+    st.caption("XAUUSD defaults use conservative commission/slippage and can use the MT5 spread column when available.")
+    exec_col_1, exec_col_2, exec_col_3 = st.columns(3)
+    with exec_col_1:
+        commission_per_lot = st.number_input(
+            "Commission / lot",
+            min_value=0.0,
+            value=float(st.session_state.get(f"run_commission_{selected}_{run_symbol}", default_execution["commission_per_lot"])),
+            step=0.1,
+            key=f"run_commission_{selected}_{run_symbol}",
+        )
+    with exec_col_2:
+        spread_pips = st.number_input(
+            "Fallback spread",
+            min_value=0.0,
+            value=float(st.session_state.get(f"run_spread_{selected}_{run_symbol}", default_execution["spread_pips"])),
+            step=0.01,
+            key=f"run_spread_{selected}_{run_symbol}",
+        )
+    with exec_col_3:
+        slippage_pips = st.number_input(
+            "Slippage",
+            min_value=0.0,
+            value=float(st.session_state.get(f"run_slippage_{selected}_{run_symbol}", default_execution["slippage_pips"])),
+            step=0.01,
+            key=f"run_slippage_{selected}_{run_symbol}",
+        )
+    exec_col_4, exec_col_5 = st.columns(2)
+    with exec_col_4:
+        tick_size = st.number_input(
+            "Tick size",
+            min_value=0.00001,
+            value=float(st.session_state.get(f"run_tick_size_{selected}_{run_symbol}", default_execution.get("tick_size", 1.0))),
+            step=0.01,
+            format="%.5f",
+            key=f"run_tick_size_{selected}_{run_symbol}",
+        )
+    with exec_col_5:
+        use_bar_spread = st.checkbox(
+            "Use MT5 spread column",
+            value=bool(st.session_state.get(f"run_bar_spread_{selected}_{run_symbol}", default_execution.get("use_bar_spread", False))),
+            key=f"run_bar_spread_{selected}_{run_symbol}",
+            help="When enabled, the backtester converts MT5 <SPREAD> values into price spread using the configured tick size.",
+        )
     if st.button("Run backtest", type="primary", use_container_width=True, key=f"run_bt_{selected}"):
         with st.spinner("Running generated strategy on local data..."):
             try:
                 strat_cls = _load_generated_strategy_class(ea)
+                execution_config = {
+                    "commission_per_lot": float(commission_per_lot),
+                    "spread_pips": float(spread_pips),
+                    "slippage_pips": float(slippage_pips),
+                    "tick_size": float(tick_size),
+                    "use_bar_spread": bool(use_bar_spread),
+                }
                 result = run_backtest(
                     strat_cls,
                     symbol=run_symbol,
@@ -144,9 +201,11 @@ def _render_conversion_tab(eas: dict):
                     date_to=str(date_to),
                     overrides=ea.get("params", {}),
                     intrabar_steps=60 if intrabar else 1,
+                    execution_config=execution_config,
                 )
                 st.session_state.setdefault("backtest_results", {})[selected] = backtest_result_payload(result)
                 st.session_state["eas"][selected]["last_backtest_symbol"] = run_symbol
+                st.session_state["eas"][selected]["last_execution_config"] = execution_config
                 autosave()
                 st.success(
                     f"Backtest finished: {result.n_trades} trades, net profit ${result.net_profit:,.0f}, "
@@ -159,8 +218,8 @@ def _render_conversion_tab(eas: dict):
     with st.expander("Generated local engine strategy", expanded=False):
         st.code(engine_source or "# No generated engine strategy found", language="python")
 
-    with st.expander("Generated Python review scaffold", expanded=False):
-        st.code(review_source or "# No generated review scaffold found", language="python")
+    with st.expander("Generated Python review scaffold / payload", expanded=False):
+        st.code(review_source or "# No generated review scaffold or payload found", language="python")
 
     filename = f"{ea['name']}.py"
     col_save, col_download = st.columns(2)
@@ -182,22 +241,33 @@ def _render_conversion_tab(eas: dict):
             use_container_width=True,
         )
 
-    st.markdown("##### Source mapping")
-    st.text_area(
-        "Original MQL5 source",
-        value=ea.get("source", ""),
-        height=220,
-        disabled=True,
-    )
+    if ea.get("origin") == "python_template":
+        st.markdown("##### Template payload")
+        st.text_area(
+            "Template payload JSON",
+            value=ea.get("review_source", ""),
+            height=220,
+            disabled=True,
+        )
+    else:
+        st.markdown("##### Source mapping")
+        st.text_area(
+            "Original MQL5 source",
+            value=ea.get("source", ""),
+            height=220,
+            disabled=True,
+        )
 
 
 def _load_generated_strategy_class(ea: dict):
-    import importlib
-    import sys
-
     root = Path(__file__).resolve().parent.parent.parent
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
+
+    if ea.get("origin") == "python_template":
+        module_name = ea["strategy_module"]
+        mod = importlib.reload(sys.modules[module_name]) if module_name in sys.modules else importlib.import_module(module_name)
+        return getattr(mod, ea["strategy_class"])
 
     normalized_symbol = normalize_symbol(ea["symbol"])
     ea["symbol"] = normalized_symbol

@@ -1,0 +1,30 @@
+{
+  "label": "SQX US30 WPR Stoch",
+  "description": "Native version of the existing US30 WPR/Stochastic breakout family.",
+  "template": "sqx_us30_wpr_stoch",
+  "payload": {
+    "name": "SQX US30 WPR Stoch",
+    "symbol": "US30.cash",
+    "timeframe": "H1",
+    "params": {
+      "WPRPeriod": 75,
+      "StochK": 14,
+      "StochD": 3,
+      "StochSlow": 3,
+      "HighestPeriod": 105,
+      "LowestPeriod": 105,
+      "ATRPeriod1": 14,
+      "ATRPeriod2": 29,
+      "mmLots": 1.0,
+      "StopLossCoef1": 2.0,
+      "ProfitTargetCoef1": 2.5,
+      "StopLossCoef2": 2.0,
+      "ProfitTargetCoef2": 2.5,
+      "TrailingStopCoef1": 1.0,
+      "MaxDistancePct": 6.0,
+      "SignalTimeRangeFrom": "00:00",
+      "SignalTimeRangeTo": "23:59"
+    },
+    "lot_value": 1.0
+  }
+}

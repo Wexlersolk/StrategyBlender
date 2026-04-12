@@ -1,0 +1,31 @@
+{
+  "label": "SQX HK50 Batch H1",
+  "description": "Native version of the strong HK50 H1 batch family with AO and LWMA asymmetry.",
+  "template": "sqx_hk50_batch_h1",
+  "payload": {
+    "name": "SQX HK50 Batch H1",
+    "symbol": "HK50.cash",
+    "timeframe": "H1",
+    "params": {
+      "mmLots": 70.0,
+      "StopLossCoef1": 2.5,
+      "ProfitTargetCoef1": 2.8,
+      "TrailingActCef1": 1.4,
+      "TrailingStop1": 127.5,
+      "StopLossCoef2": 3.0,
+      "ProfitTargetCoef2": 2.2,
+      "TrailingStopCoef1": 1.0,
+      "LWMAPeriod1": 14,
+      "IndicatorCrsMAPrd1": 47,
+      "ATR1_period": 19,
+      "ATR2_period": 45,
+      "ATR3_period": 14,
+      "ATR4_period": 100,
+      "Highest_period": 50,
+      "Lowest_period": 50,
+      "SignalTimeRangeFrom": "00:13",
+      "SignalTimeRangeTo": "00:26"
+    },
+    "lot_value": 0.1285
+  }
+}

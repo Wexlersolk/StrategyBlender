@@ -21,10 +21,10 @@ def ema(series: pd.Series, period: int) -> pd.Series:
 
 def wma(series: pd.Series, period: int) -> pd.Series:
     period = max(int(period), 1)
-    weights = pd.Series(range(1, period + 1), dtype=float)
+    weights = np.arange(1, period + 1, dtype=float)
     return series.rolling(period).apply(
-        lambda values: float((pd.Series(values) * weights).sum() / weights.sum()),
-        raw=False,
+        lambda values: float(np.dot(values, weights) / weights.sum()),
+        raw=True,
     )
 
 

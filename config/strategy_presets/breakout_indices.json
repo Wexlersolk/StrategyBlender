@@ -1,0 +1,25 @@
+{
+  "label": "Breakout Indices",
+  "description": "Index breakout preset with ATR risk and loose BB-width confirmation.",
+  "template": "breakout_confirm",
+  "payload": {
+    "name": "Breakout Indices",
+    "symbol": "US30.cash",
+    "timeframe": "H1",
+    "direction": "long",
+    "params": {
+      "HighestPeriod": 20,
+      "LowestPeriod": 20,
+      "ATRPeriod": 14,
+      "mmLots": 1.0,
+      "StopLossATR": 1.7,
+      "ProfitTargetATR": 2.8,
+      "MaxDistancePct": 4.0,
+      "BBWRPeriod": 20,
+      "BBWRMin": 0.0
+    },
+    "expiry_bars": 3,
+    "min_bars": 25,
+    "lot_value": 1.0
+  }
+}

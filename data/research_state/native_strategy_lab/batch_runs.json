@@ -1,0 +1,1837 @@
+[
+  {
+    "batch_id": "batch_f52420757a0e",
+    "created_at": "2026-04-07T12:39:15.581498+00:00",
+    "template_name": "breakout_confirm",
+    "base_payload": {
+      "name": "Breakout Indices",
+      "symbol": "US30.cash",
+      "timeframe": "H1",
+      "direction": "long",
+      "params": {
+        "HighestPeriod": 20,
+        "LowestPeriod": 20,
+        "ATRPeriod": 14,
+        "mmLots": 1.0,
+        "StopLossATR": 1.7,
+        "ProfitTargetATR": 2.8,
+        "MaxDistancePct": 4.0,
+        "BBWRPeriod": 20,
+        "BBWRMin": 0.0
+      },
+      "expiry_bars": 3,
+      "min_bars": 25,
+      "lot_value": 1.0
+    },
+    "mutation_space": {},
+    "date_from": "2021-01-01",
+    "date_to": "2025-01-01",
+    "search_mode": "progressive",
+    "promotion_policy": {
+      "min_trades": 8,
+      "min_profit_factor": 1.15,
+      "max_drawdown_pct": 25.0,
+      "min_wfo_robustness": 0.4,
+      "min_mc_prob_profit": 0.52,
+      "min_score": 52.0
+    },
+    "include_structural_mutations": true,
+    "candidates": [
+      {
+        "strategy_id": "cand_5a7bc2f7526f_00",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 2,
+          "min_bars": 20
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 2,
+        "structural_changes": [
+          "expiry_bars",
+          "min_bars"
+        ],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_f744bbf26579_01",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 2,
+          "min_bars": 34
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 2,
+        "structural_changes": [
+          "expiry_bars",
+          "min_bars"
+        ],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_10c641dabe78_02",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 2,
+          "min_bars": 55
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 2,
+        "structural_changes": [
+          "expiry_bars",
+          "min_bars"
+        ],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_4d0928f6b50e_03",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 2,
+          "min_bars": 25
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 1,
+        "structural_changes": [
+          "expiry_bars"
+        ],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_a59429cca7c9_04",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 3,
+          "min_bars": 20
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 1,
+        "structural_changes": [
+          "min_bars"
+        ],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_4fa847452fc5_05",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 3,
+          "min_bars": 34
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 1,
+        "structural_changes": [
+          "min_bars"
+        ],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_b19d8af414cf_06",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 3,
+          "min_bars": 55
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 1,
+        "structural_changes": [
+          "min_bars"
+        ],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_a13527ffa478_07",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 3,
+          "min_bars": 25
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 0,
+        "structural_changes": [],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_ec43cbd2360e_08",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 5,
+          "min_bars": 20
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 2,
+        "structural_changes": [
+          "expiry_bars",
+          "min_bars"
+        ],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_6857a7d74989_09",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 5,
+          "min_bars": 34
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 2,
+        "structural_changes": [
+          "expiry_bars",
+          "min_bars"
+        ],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_9ba6d9494751_10",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 5,
+          "min_bars": 55
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 2,
+        "structural_changes": [
+          "expiry_bars",
+          "min_bars"
+        ],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_83a730f69bf6_11",
+        "name": "Breakout Indices",
+        "score": 49.02,
+        "accepted": false,
+        "template_name": "breakout_confirm",
+        "mutations": {
+          "direction": "long",
+          "expiry_bars": 5,
+          "min_bars": 25
+        },
+        "backtest": {
+          "date_from": "2021-01-04",
+          "date_to": "2024-12-31",
+          "total_profit": -1353.1798152896736,
+          "sharpe_mean": -0.13939804797067942,
+          "win_rate": 0.5106382978723404,
+          "num_months": 48,
+          "num_trades": 752,
+          "num_decisions": 756,
+          "profit_factor": 0.9779648070488945,
+          "max_drawdown_pct": 5.222452034451969,
+          "balance_dd_abs": 5329.329053615191,
+          "balance_dd_pct": 5.222452034451969,
+          "equity_dd_abs": 5329.329053615191,
+          "equity_dd_pct": 5.222452034451969
+        },
+        "wfo": {
+          "n_windows": 11,
+          "profitable_windows": 7,
+          "robustness_score": 0.6364,
+          "avg_efficiency": 6.8724,
+          "oos_net_profit": -2597.12
+        },
+        "parameter_stability": {
+          "score": 0.8611,
+          "windows": 11
+        },
+        "monte_carlo": {
+          "n_simulations": 200,
+          "profit_p5": -7967.48,
+          "profit_p25": -4079.83,
+          "profit_median": -1101.73,
+          "profit_p75": 2405.07,
+          "profit_p95": 7992.41,
+          "drawdown_p50": 5.93,
+          "drawdown_p95": 10.68,
+          "prob_profit": 0.41,
+          "prob_ruin_20pct": 0.0,
+          "sharpe_median": -0.0273
+        },
+        "mutation_distance": 1,
+        "structural_changes": [
+          "expiry_bars"
+        ],
+        "quality_bucket": "watch",
+        "risk_adjusted": 52.77,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      }
+    ]
+  },
+  {
+    "batch_id": "batch_8da4a9f03716",
+    "created_at": "2026-04-10T04:59:21.419440+00:00",
+    "template_name": "xau_breakout_session",
+    "base_payload": {
+      "name": "XAU Breakout Session",
+      "symbol": "XAUUSD",
+      "timeframe": "H1",
+      "params": {
+        "HighestPeriod": 24,
+        "LowestPeriod": 24,
+        "ATRPeriod": 14,
+        "BBWRPeriod": 24,
+        "BBWRMin": 0.015,
+        "EntryBufferATR": 0.15,
+        "mmLots": 1.0,
+        "StopLossATR": 1.4,
+        "ProfitTargetATR": 2.8,
+        "MaxDistancePct": 3.5,
+        "SignalTimeRangeFrom": "06:00",
+        "SignalTimeRangeTo": "18:00",
+        "ExitAfterBars": 18
+      },
+      "min_bars": 30,
+      "lot_value": 100.0
+    },
+    "mutation_space": {
+      "params.HighestPeriod": [
+        16,
+        24,
+        36
+      ],
+      "params.LowestPeriod": [
+        16,
+        24,
+        36
+      ],
+      "params.ATRPeriod": [
+        10,
+        14,
+        21
+      ],
+      "params.BBWRPeriod": [
+        18,
+        24,
+        36
+      ],
+      "params.BBWRMin": [
+        0.01,
+        0.015,
+        0.025
+      ],
+      "params.EntryBufferATR": [
+        0.1,
+        0.15,
+        0.25
+      ],
+      "params.MaxDistancePct": [
+        2.5,
+        3.5,
+        5.0
+      ],
+      "params.ExitAfterBars": [
+        12,
+        18,
+        24
+      ]
+    },
+    "search_mode": "progressive",
+    "promotion_policy": {
+      "min_trades": 10,
+      "min_profit_factor": 1.16,
+      "max_drawdown_pct": 24.0,
+      "min_wfo_robustness": 0.4,
+      "min_mc_prob_profit": 0.53,
+      "min_score": 55.0
+    },
+    "include_structural_mutations": false,
+    "stage": "evaluated",
+    "requested_candidates": 6,
+    "generated_candidates": 3,
+    "duplicate_candidates": [
+      {
+        "candidate_id": "cand_ba4f5a6d0619",
+        "duplicate_of": "cand_9a736eddefe1",
+        "mutations": {
+          "params.ATRPeriod": 14,
+          "params.BBWRMin": 0.01,
+          "params.BBWRPeriod": 24,
+          "params.EntryBufferATR": 0.15,
+          "params.ExitAfterBars": 18,
+          "params.HighestPeriod": 24,
+          "params.LowestPeriod": 24,
+          "params.MaxDistancePct": 3.5
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "3f69f937e1c8"
+      },
+      {
+        "candidate_id": "cand_0ce3c810b082",
+        "duplicate_of": "cand_9a736eddefe1",
+        "mutations": {
+          "params.ATRPeriod": 14,
+          "params.BBWRMin": 0.015,
+          "params.BBWRPeriod": 18,
+          "params.EntryBufferATR": 0.15,
+          "params.ExitAfterBars": 18,
+          "params.HighestPeriod": 24,
+          "params.LowestPeriod": 24,
+          "params.MaxDistancePct": 3.5
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "3f69f937e1c8"
+      },
+      {
+        "candidate_id": "cand_03e3ff5aaaee",
+        "duplicate_of": "cand_9a736eddefe1",
+        "mutations": {
+          "params.ATRPeriod": 14,
+          "params.BBWRMin": 0.015,
+          "params.BBWRPeriod": 24,
+          "params.EntryBufferATR": 0.15,
+          "params.ExitAfterBars": 12,
+          "params.HighestPeriod": 24,
+          "params.LowestPeriod": 24,
+          "params.MaxDistancePct": 3.5
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "3f69f937e1c8"
+      }
+    ],
+    "candidates": [
+      {
+        "strategy_id": "cand_9a736eddefe1_00",
+        "name": "XAU Breakout Session [01]",
+        "template_name": "xau_breakout_session",
+        "mutations": {
+          "params.ATRPeriod": 14,
+          "params.BBWRMin": 0.015,
+          "params.BBWRPeriod": 24,
+          "params.EntryBufferATR": 0.15,
+          "params.ExitAfterBars": 18,
+          "params.HighestPeriod": 24,
+          "params.LowestPeriod": 24,
+          "params.MaxDistancePct": 3.5
+        },
+        "mutation_distance": 0,
+        "structural_changes": [],
+        "behavioral_fingerprint": "3f69f937e1c8",
+        "status": "evaluated",
+        "evaluated": true,
+        "score": 31.71,
+        "accepted": false,
+        "backtest": {
+          "date_from": "2024-01-02",
+          "date_to": "2025-12-30",
+          "total_profit": 15096.711014753355,
+          "sharpe_mean": 0.32824435198609836,
+          "win_rate": 0.4021978021978022,
+          "num_months": 24,
+          "num_trades": 455,
+          "num_decisions": 460,
+          "profit_factor": 1.0686411228828732,
+          "max_drawdown_pct": 19.087339636144332,
+          "balance_dd_abs": 19901.979576359387,
+          "balance_dd_pct": 19.087339636144332,
+          "equity_dd_abs": 19901.979576359387,
+          "equity_dd_pct": 19.087339636144332
+        },
+        "wfo": {},
+        "parameter_stability": {},
+        "monte_carlo": {},
+        "quality_bucket": "reject",
+        "risk_adjusted": 22.17,
+        "rank_score": 3,
+        "rank_profit_factor": 3,
+        "rank_drawdown": 3
+      },
+      {
+        "strategy_id": "cand_2fc6aaa5951e_01",
+        "name": "XAU Breakout Session [02]",
+        "template_name": "xau_breakout_session",
+        "mutations": {
+          "params.ATRPeriod": 10,
+          "params.BBWRMin": 0.015,
+          "params.BBWRPeriod": 24,
+          "params.EntryBufferATR": 0.15,
+          "params.ExitAfterBars": 18,
+          "params.HighestPeriod": 24,
+          "params.LowestPeriod": 24,
+          "params.MaxDistancePct": 3.5
+        },
+        "mutation_distance": 1,
+        "structural_changes": [
+          "params.ATRPeriod"
+        ],
+        "behavioral_fingerprint": "c8657546daed",
+        "status": "evaluated",
+        "evaluated": true,
+        "score": 35.24,
+        "accepted": false,
+        "backtest": {
+          "date_from": "2024-01-02",
+          "date_to": "2025-12-30",
+          "total_profit": 21133.11134546883,
+          "sharpe_mean": 0.4748255466946691,
+          "win_rate": 0.40829694323144106,
+          "num_months": 24,
+          "num_trades": 458,
+          "num_decisions": 463,
+          "profit_factor": 1.0964254191753868,
+          "max_drawdown_pct": 16.705050285018547,
+          "balance_dd_abs": 17265.034620737628,
+          "balance_dd_pct": 16.705050285018547,
+          "equity_dd_abs": 17265.034620737628,
+          "equity_dd_pct": 16.705050285018547
+        },
+        "wfo": {},
+        "parameter_stability": {},
+        "monte_carlo": {},
+        "quality_bucket": "reject",
+        "risk_adjusted": 26.89,
+        "rank_score": 2,
+        "rank_profit_factor": 2,
+        "rank_drawdown": 2
+      },
+      {
+        "strategy_id": "cand_2b9af6cbc167_02",
+        "name": "XAU Breakout Session [03]",
+        "template_name": "xau_breakout_session",
+        "mutations": {
+          "params.ATRPeriod": 14,
+          "params.BBWRMin": 0.015,
+          "params.BBWRPeriod": 24,
+          "params.EntryBufferATR": 0.1,
+          "params.ExitAfterBars": 18,
+          "params.HighestPeriod": 24,
+          "params.LowestPeriod": 24,
+          "params.MaxDistancePct": 3.5
+        },
+        "mutation_distance": 1,
+        "structural_changes": [
+          "params.EntryBufferATR"
+        ],
+        "behavioral_fingerprint": "43d0d462aa61",
+        "status": "evaluated",
+        "evaluated": true,
+        "score": 37.01,
+        "accepted": false,
+        "backtest": {
+          "date_from": "2024-01-02",
+          "date_to": "2025-12-30",
+          "total_profit": 24249.163864215618,
+          "sharpe_mean": 0.531166310064183,
+          "win_rate": 0.420479302832244,
+          "num_months": 24,
+          "num_trades": 459,
+          "num_decisions": 461,
+          "profit_factor": 1.1106253789492027,
+          "max_drawdown_pct": 15.242663619969019,
+          "balance_dd_abs": 15880.30351236793,
+          "balance_dd_pct": 15.242663619969019,
+          "equity_dd_abs": 15880.30351236793,
+          "equity_dd_pct": 15.242663619969019
+        },
+        "wfo": {},
+        "parameter_stability": {},
+        "monte_carlo": {},
+        "quality_bucket": "reject",
+        "risk_adjusted": 29.39,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      }
+    ],
+    "date_from": "2024-01-01",
+    "date_to": "2025-12-31",
+    "evaluation_mode": {
+      "run_mc": false,
+      "run_wfo_checks": false,
+      "intrabar_steps": 60,
+      "top_n": 3
+    },
+    "updated_at": "2026-04-10T04:59:56.218037+00:00"
+  },
+  {
+    "batch_id": "batch_20c7050ed007",
+    "created_at": "2026-04-12T06:41:17.654516+00:00",
+    "template_name": "sqx_xau_highest_breakout",
+    "base_payload": {
+      "name": "SQX XAU Highest Breakout",
+      "symbol": "XAUUSD",
+      "timeframe": "H1",
+      "long_signal_mode": "sma_bias",
+      "short_signal_mode": "lwma_lowest_count",
+      "params": {
+        "HighestPeriod": 245,
+        "LowestPeriod": 245,
+        "PullbackSignalPeriod": 10,
+        "FastSMAPeriod": 10,
+        "SignalMAPeriod": 57,
+        "LWMAPeriod": 54,
+        "ShortLWMAPeriod": 14,
+        "SMMAPeriod": 30,
+        "HAFloorMAPeriod": 67,
+        "WaveTrendChannel": 9,
+        "WaveTrendAverage": 21,
+        "ATRLongStopPeriod": 14,
+        "ATRLongTargetPeriod": 14,
+        "ATRLongTrailPeriod": 40,
+        "ATRShortStopPeriod": 14,
+        "ATRShortTargetPeriod": 19,
+        "LongStopATR": 2.0,
+        "LongTargetATR": 3.5,
+        "ShortStopATR": 1.5,
+        "ShortTargetATR": 4.8,
+        "LongExpiryBars": 10,
+        "ShortExpiryBars": 18,
+        "LongTrailATR": 1.0,
+        "LongTrailActivationATR": 0.0,
+        "ShortTrailATR": 0.0,
+        "ShortTrailActivationATR": 0.0,
+        "HourQuantileLookback": 809,
+        "HourQuantileThreshold": 66.5,
+        "MaxDistancePct": 6.0,
+        "mmLots": 1.0,
+        "SignalTimeRangeFrom": "00:00",
+        "SignalTimeRangeTo": "23:59"
+      },
+      "min_bars": 80,
+      "lot_value": 100.0
+    },
+    "mutation_space": {},
+    "search_mode": "grid",
+    "promotion_policy": {
+      "min_trades": 8,
+      "min_profit_factor": 1.14,
+      "max_drawdown_pct": 24.0,
+      "min_wfo_robustness": 0.38,
+      "min_mc_prob_profit": 0.5,
+      "min_score": 53.0
+    },
+    "include_structural_mutations": true,
+    "stage": "evaluated",
+    "requested_candidates": 9,
+    "generated_candidates": 1,
+    "duplicate_candidates": [
+      {
+        "candidate_id": "cand_285295d58d45",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "short_signal_mode": "wt_push"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_20fc0f4e6065",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "short_signal_mode": "lwma_hour_quantile"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_64d35fa166f6",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "smma_pullback",
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_e90877e534d2",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "smma_pullback",
+          "short_signal_mode": "wt_push"
+        },
+        "mutation_distance": 2,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_337cae4503f7",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "smma_pullback",
+          "short_signal_mode": "lwma_hour_quantile"
+        },
+        "mutation_distance": 2,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_ba42b692ab0f",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "ha_reclaim",
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_4f15f754e0bc",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "ha_reclaim",
+          "short_signal_mode": "wt_push"
+        },
+        "mutation_distance": 2,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_fd0e3ceae210",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "ha_reclaim",
+          "short_signal_mode": "lwma_hour_quantile"
+        },
+        "mutation_distance": 2,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      }
+    ],
+    "candidates": [
+      {
+        "strategy_id": "cand_ced69ece3e78_00",
+        "name": "SQX XAU Highest Breakout [01]",
+        "template_name": "sqx_xau_highest_breakout",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 0,
+        "structural_changes": [],
+        "behavioral_fingerprint": "69369b2a3cf0",
+        "status": "evaluated",
+        "evaluated": true,
+        "score": 16.82,
+        "accepted": false,
+        "backtest": {
+          "date_from": "2021-01-01",
+          "date_to": "2024-12-31",
+          "total_profit": -26266.526049169832,
+          "sharpe_mean": -0.8608258023230931,
+          "win_rate": 0.20915032679738563,
+          "num_months": 48,
+          "num_trades": 153,
+          "num_decisions": 715,
+          "profit_factor": 0.7351708571713992,
+          "max_drawdown_pct": 34.60531478061338,
+          "balance_dd_abs": 34605.31478061332,
+          "balance_dd_pct": 34.60531478061332,
+          "equity_dd_abs": 36784.68144727997,
+          "equity_dd_pct": 36.784681447279965
+        },
+        "wfo": {},
+        "parameter_stability": {},
+        "monte_carlo": {},
+        "quality_bucket": "reject",
+        "risk_adjusted": -0.48,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      }
+    ],
+    "date_from": "2021-01-01",
+    "date_to": "2025-01-01",
+    "evaluation_mode": {
+      "run_mc": false,
+      "run_wfo_checks": false,
+      "intrabar_steps": 1,
+      "top_n": 6
+    },
+    "updated_at": "2026-04-12T06:44:28.097101+00:00"
+  },
+  {
+    "batch_id": "batch_268aaa2dab25",
+    "created_at": "2026-04-12T06:47:27.288368+00:00",
+    "template_name": "sqx_xau_highest_breakout",
+    "base_payload": {
+      "name": "SQX XAU Highest Breakout",
+      "symbol": "XAUUSD",
+      "timeframe": "H1",
+      "long_signal_mode": "sma_bias",
+      "short_signal_mode": "lwma_lowest_count",
+      "params": {
+        "HighestPeriod": 245,
+        "LowestPeriod": 245,
+        "PullbackSignalPeriod": 10,
+        "FastSMAPeriod": 10,
+        "SignalMAPeriod": 57,
+        "LWMAPeriod": 54,
+        "ShortLWMAPeriod": 14,
+        "SMMAPeriod": 30,
+        "HAFloorMAPeriod": 67,
+        "WaveTrendChannel": 9,
+        "WaveTrendAverage": 21,
+        "ATRLongStopPeriod": 14,
+        "ATRLongTargetPeriod": 14,
+        "ATRLongTrailPeriod": 40,
+        "ATRShortStopPeriod": 14,
+        "ATRShortTargetPeriod": 19,
+        "LongStopATR": 2.0,
+        "LongTargetATR": 3.5,
+        "ShortStopATR": 1.5,
+        "ShortTargetATR": 4.8,
+        "LongExpiryBars": 10,
+        "ShortExpiryBars": 18,
+        "LongTrailATR": 1.0,
+        "LongTrailActivationATR": 0.0,
+        "ShortTrailATR": 0.0,
+        "ShortTrailActivationATR": 0.0,
+        "HourQuantileLookback": 809,
+        "HourQuantileThreshold": 66.5,
+        "MaxDistancePct": 6.0,
+        "mmLots": 1.0,
+        "SignalTimeRangeFrom": "00:00",
+        "SignalTimeRangeTo": "23:59"
+      },
+      "min_bars": 80,
+      "lot_value": 100.0
+    },
+    "mutation_space": {
+      "params.HighestPeriod": [
+        205,
+        210,
+        245
+      ],
+      "params.LowestPeriod": [
+        205,
+        210,
+        245
+      ],
+      "params.LongStopATR": [
+        1.5,
+        1.7,
+        2.0
+      ],
+      "params.LongTargetATR": [
+        3.4,
+        3.5,
+        5.7
+      ],
+      "params.ShortStopATR": [
+        1.5,
+        1.8,
+        1.9
+      ],
+      "params.ShortTargetATR": [
+        1.6,
+        1.9,
+        4.8
+      ],
+      "params.LongExpiryBars": [
+        2,
+        4,
+        10
+      ],
+      "params.ShortExpiryBars": [
+        10,
+        18
+      ],
+      "params.LongTrailATR": [
+        0.0,
+        1.0,
+        2.4
+      ],
+      "params.MaxDistancePct": [
+        4.0,
+        6.0,
+        8.0
+      ]
+    },
+    "search_mode": "progressive",
+    "promotion_policy": {
+      "min_trades": 8,
+      "min_profit_factor": 1.14,
+      "max_drawdown_pct": 24.0,
+      "min_wfo_robustness": 0.38,
+      "min_mc_prob_profit": 0.5,
+      "min_score": 53.0
+    },
+    "include_structural_mutations": true,
+    "stage": "evaluated",
+    "requested_candidates": 18,
+    "generated_candidates": 3,
+    "duplicate_candidates": [
+      {
+        "candidate_id": "cand_63d75ec24b1a",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 205,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_18068122a5a7",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 210,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_51d349d6376e",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 2,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_a91d645badfc",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 4,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_aaa2b1510a32",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 1.5,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_560b966cb1e8",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 1.7,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_8e38dbfe8687",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.4,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_1fa497f9b3ea",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 0.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_0f52e0dc7d14",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 4.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_144eefdbf6d0",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 10,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_a84bd542c611",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 1.6,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_81618aadedfc",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 1.9,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_285295d58d45",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "wt_push"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_20fc0f4e6065",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_hour_quantile"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      },
+      {
+        "candidate_id": "cand_e0c3a0edf32f",
+        "duplicate_of": "cand_ced69ece3e78",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.8,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "behavioral_fingerprint": "69369b2a3cf0"
+      }
+    ],
+    "candidates": [
+      {
+        "strategy_id": "cand_ced69ece3e78_00",
+        "name": "SQX XAU Highest Breakout [01]",
+        "template_name": "sqx_xau_highest_breakout",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 245,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 0,
+        "structural_changes": [],
+        "behavioral_fingerprint": "69369b2a3cf0",
+        "status": "evaluated",
+        "evaluated": true,
+        "score": 16.82,
+        "accepted": false,
+        "backtest": {
+          "date_from": "2021-01-01",
+          "date_to": "2024-12-31",
+          "total_profit": -26266.526049169832,
+          "sharpe_mean": -0.8608258023230931,
+          "win_rate": 0.20915032679738563,
+          "num_months": 48,
+          "num_trades": 153,
+          "num_decisions": 715,
+          "profit_factor": 0.7351708571713992,
+          "max_drawdown_pct": 34.60531478061338,
+          "balance_dd_abs": 34605.31478061332,
+          "balance_dd_pct": 34.60531478061332,
+          "equity_dd_abs": 36784.68144727997,
+          "equity_dd_pct": 36.784681447279965
+        },
+        "wfo": {},
+        "parameter_stability": {},
+        "monte_carlo": {},
+        "quality_bucket": "reject",
+        "risk_adjusted": -0.48,
+        "rank_score": 1,
+        "rank_profit_factor": 1,
+        "rank_drawdown": 1
+      },
+      {
+        "strategy_id": "cand_d1be756a1b07_01",
+        "name": "SQX XAU Highest Breakout [02]",
+        "template_name": "sqx_xau_highest_breakout",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 205,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "structural_changes": [
+          "params.LowestPeriod"
+        ],
+        "behavioral_fingerprint": "3267abab6d07",
+        "status": "evaluated",
+        "evaluated": true,
+        "score": 16.48,
+        "accepted": false,
+        "backtest": {
+          "date_from": "2021-01-01",
+          "date_to": "2024-12-31",
+          "total_profit": -31667.68152718123,
+          "sharpe_mean": -0.9875723210299064,
+          "win_rate": 0.20359281437125748,
+          "num_months": 48,
+          "num_trades": 167,
+          "num_decisions": 720,
+          "profit_factor": 0.7065634890808945,
+          "max_drawdown_pct": 40.00647025862476,
+          "balance_dd_abs": 40006.47025862477,
+          "balance_dd_pct": 40.00647025862477,
+          "equity_dd_abs": 42185.83692529142,
+          "equity_dd_pct": 42.18583692529142
+        },
+        "wfo": {},
+        "parameter_stability": {},
+        "monte_carlo": {},
+        "quality_bucket": "reject",
+        "risk_adjusted": -3.52,
+        "rank_score": 3,
+        "rank_profit_factor": 3,
+        "rank_drawdown": 3
+      },
+      {
+        "strategy_id": "cand_6bc1c0fa8040_02",
+        "name": "SQX XAU Highest Breakout [03]",
+        "template_name": "sqx_xau_highest_breakout",
+        "mutations": {
+          "long_signal_mode": "sma_bias",
+          "params.HighestPeriod": 245,
+          "params.LongExpiryBars": 10,
+          "params.LongStopATR": 2.0,
+          "params.LongTargetATR": 3.5,
+          "params.LongTrailATR": 1.0,
+          "params.LowestPeriod": 210,
+          "params.MaxDistancePct": 6.0,
+          "params.ShortExpiryBars": 18,
+          "params.ShortStopATR": 1.5,
+          "params.ShortTargetATR": 4.8,
+          "short_signal_mode": "lwma_lowest_count"
+        },
+        "mutation_distance": 1,
+        "structural_changes": [
+          "params.LowestPeriod"
+        ],
+        "behavioral_fingerprint": "445d21f5a0a9",
+        "status": "evaluated",
+        "evaluated": true,
+        "score": 16.58,
+        "accepted": false,
+        "backtest": {
+          "date_from": "2021-01-01",
+          "date_to": "2024-12-31",
+          "total_profit": -30381.4448493747,
+          "sharpe_mean": -0.9501497501146435,
+          "win_rate": 0.20606060606060606,
+          "num_months": 48,
+          "num_trades": 165,
+          "num_decisions": 718,
+          "profit_factor": 0.7150861882819367,
+          "max_drawdown_pct": 38.720233580818224,
+          "balance_dd_abs": 38720.23358081824,
+          "balance_dd_pct": 38.720233580818245,
+          "equity_dd_abs": 40899.60024748489,
+          "equity_dd_pct": 40.899600247484884
+        },
+        "wfo": {},
+        "parameter_stability": {},
+        "monte_carlo": {},
+        "quality_bucket": "reject",
+        "risk_adjusted": -2.78,
+        "rank_score": 2,
+        "rank_profit_factor": 2,
+        "rank_drawdown": 2
+      }
+    ],
+    "date_from": "2021-01-01",
+    "date_to": "2025-01-01",
+    "evaluation_mode": {
+      "run_mc": false,
+      "run_wfo_checks": false,
+      "intrabar_steps": 1,
+      "top_n": 3
+    },
+    "updated_at": "2026-04-12T06:59:21.851736+00:00"
+  }
+]

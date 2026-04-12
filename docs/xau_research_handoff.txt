@@ -1,0 +1,264 @@
+XAUUSD Research Handoff
+=======================
+
+Purpose
+-------
+This file summarizes the XAUUSD research and engine work done in this repo so another user can understand:
+- what was added
+- what was fixed
+- what still does not correlate well with MT5
+- how XAU strategy research should be run now
+
+
+High-Level Outcome
+------------------
+The project is usable for XAUUSD idea generation and rough filtering, but it is not yet accurate enough to trust native backtests as the final selector for MT5-ready gold strategies.
+
+Current practical rule:
+- native engine = research / generation / rough shortlist
+- MT5 backtest = final acceptance gate
+
+
+What Was Added
+--------------
+1. Native XAU strategy families
+- xau_breakout_session
+- xau_discovery_grammar
+- sqx_xau_highest_breakout
+
+2. Continuous native generator
+- supports preset-driven discovery
+- supports structural mutations for constrained XAU grammar
+- supports optional WFO / MC during generation
+
+Main entrypoint:
+- scripts/run_native_generator.py
+
+3. MT5 export path from stored native payload
+- scripts/export_native_to_mt5.py
+- services/mt5_export_service.py
+
+4. MT5 validation and comparison tooling
+- scripts/compare_mt5_report.py
+- scripts/compare_mt5_trades.py
+- scripts/debug_pending_order_lifecycle.py
+- services/mt5_report_service.py
+
+5. MT5 correlation gate
+- MT5 profitability alone is no longer enough
+- correlation to native must also pass bounds for acceptance
+
+
+Main Engine / Research Improvements
+-----------------------------------
+The following XAU-related fixes were implemented during research:
+
+1. Execution realism
+- realistic XAU execution defaults added to backtest/native lab flow
+- dynamic spread support from MT5 <SPREAD> column
+- swap / contract / tick-value-aware profit calculation
+
+2. Market-entry realism
+- market entries no longer use same-bar signal information while entering at the same bar open
+- same-bar market entries can hit SL/TP inside the entry bar
+- SL/TP are shifted around executed fill, not raw intended open
+
+3. Equity and drawdown realism
+- floating equity drawdown is tracked bar by bar
+- open-position marking uses executable exit-side prices including spread/slippage
+
+4. Intrabar realism
+- XAUUSD H1 native evaluation defaults to M1-backed intrabar replay
+- trade comparison tooling now uses the default XAU H1 intrabar path instead of forcing intrabar_steps=1
+
+5. Signal compiler / template fixes
+- pre-roll history added so indicators are warmed before evaluation date_from
+- runtime native evaluation compiles from stored template_payload instead of stale generated python files
+- XAU discovery families were shifted to closed-bar-safe logic
+
+6. SQX / indicator fixes
+- global WMA bug fixed in engine/indicators.py
+- SQX long/short arbitration fixed so long takes priority when both signals are true, matching MT5 exporter behavior
+- MT5 trade parser fixed so "buy stop" is treated as long entry
+
+7. Pending-order lifecycle fixes
+- pending orders now record opened_time and first eligible time
+- under M1 replay, a newly placed pending order does not see the entire opening minute immediately
+- pending expiry and exit_after_bars were changed from sparse bar-count logic to elapsed-time logic
+  This matters because XAU H1 local data can have gaps; MT5 expiry is wall-clock based
+
+8. Broker bar-time alignment
+- sqx_xau_highest_breakout now uses broker-style bar-time offset by default
+- native backtest shifts H1 and M1 timestamps together for this family
+
+
+What We Learned
+---------------
+1. Early native "monster" XAU candidates were false positives
+- once execution and timing realism were fixed, many strong native winners disappeared
+
+2. MT5 is stricter than native in the areas that matter
+- especially drawdown
+- native is still generally more optimistic than MT5
+
+3. Correlation improved, but is still not good enough
+- some candidates moved from nonsense to directionally plausible
+- however, some native/MT5 mismatches still happen on the first few trades
+
+4. Pending-order timing was a real bug, but not the last bug
+- after fixing pending-stop trigger and expiry behavior, some candidates still diverged at signal/order-placement timing
+
+5. SQX-inspired highest-breakout family is promising as a research direction, but not yet tightly correlated
+- native and MT5 are still capable of trading different sequences early
+
+
+Current Known Limitation
+------------------------
+For XAUUSD, native and MT5 are still not equivalent enough to trust native-only ranking.
+
+In particular:
+- signal placement for some families still diverges early
+- MT5 drawdown can still be materially worse than native
+- native can still select candidates that do not survive MT5
+
+Therefore:
+- do not accept XAU strategies from native metrics alone
+
+
+Recommended Workflow Right Now
+------------------------------
+1. Generate natively
+- use native generator to explore structures and parameters cheaply
+
+2. Shortlist conservatively
+- prefer candidates with:
+  - PF comfortably above 1.15 natively
+  - low native equity drawdown
+  - enough trades
+  - simple, explainable structure
+
+3. Export quickly to MT5
+- use scripts/export_native_to_mt5.py
+
+4. Validate in MT5
+- compile EA
+- run MT5 Strategy Tester
+- save HTML report into the strategy folder
+
+5. Compare native vs MT5
+- use compare_mt5_report.py
+- use compare_mt5_trades.py if correlation looks suspicious
+
+6. Accept only if MT5 is good
+- MT5 is the source of truth
+
+
+Suggested XAU Presets To Use
+----------------------------
+1. xau_discovery_grammar
+- constrained XAU structural search
+- good for broader idea discovery
+
+2. sqx_xau_highest_breakout
+- SQX-inspired highest/lowest breakout family
+- good if you want to mine breakout concepts similar to external SQX examples
+
+
+Useful Commands
+---------------
+Generate XAU discovery candidates:
+
+PYTHONPATH=. python scripts/run_native_generator.py \
+  --preset-id xau_discovery_grammar \
+  --date-from 2021-01-01 \
+  --date-to 2025-01-01 \
+  --max-candidates 200 \
+  --discovery-mode balanced \
+  --include-structural-mutations
+
+Generate SQX-style XAU highest-breakout candidates:
+
+PYTHONPATH=. python scripts/run_native_generator.py \
+  --preset-id sqx_xau_highest_breakout \
+  --date-from 2020-01-01 \
+  --date-to 2025-01-01 \
+  --max-candidates 100 \
+  --discovery-mode conservative \
+  --include-structural-mutations
+
+Export a native strategy to MT5:
+
+PYTHONPATH=. python scripts/export_native_to_mt5.py \
+  --strategy-id YOUR_STRATEGY_ID \
+  --output-name YOUR_STRATEGY_NAME
+
+Compare MT5 report to native record:
+
+PYTHONPATH=. python scripts/compare_mt5_report.py \
+  mt5/generated/YOUR_STRATEGY_NAME/ReportMT5/ReportTester-1513009549.html \
+  --strategy-id YOUR_STRATEGY_ID
+
+Compare early MT5 trades to native trades:
+
+PYTHONPATH=. python scripts/compare_mt5_trades.py \
+  mt5/generated/YOUR_STRATEGY_NAME/ReportMT5/ReportTester-1513009549.html \
+  --strategy-id YOUR_STRATEGY_ID \
+  --strategy-tag YOUR_STRATEGY_ID \
+  --date-from 2020-01-01 \
+  --date-to 2020-03-01 \
+  --limit 20
+
+Debug first pending-order lifecycle:
+
+PYTHONPATH=. python scripts/debug_pending_order_lifecycle.py \
+  --strategy-id YOUR_STRATEGY_ID \
+  --report-path mt5/generated/YOUR_STRATEGY_NAME/ReportMT5/ReportTester-1513009549.html \
+  --strategy-tag YOUR_STRATEGY_ID \
+  --date-from 2020-01-01 \
+  --date-to 2020-03-01
+
+
+How To Find The Best Candidates
+-------------------------------
+Use this ranking logic:
+
+1. Native shortlist
+- sort by:
+  - higher profit factor
+  - lower equity drawdown
+  - enough trades
+  - simpler structure over overfit complexity
+
+2. Ignore flashy native outliers
+- if a candidate looks too good, assume it is suspicious until MT5 confirms it
+
+3. Export top 3-5 only
+- do not MT5-test everything
+- MT5 is slower, so use it on the best native shortlist only
+
+4. Accept by MT5, not native
+- keep strategies with:
+  - acceptable PF in MT5
+  - acceptable equity DD in MT5
+  - enough trades in MT5
+  - reasonable correlation to native
+
+5. Reject candidates with early trade-sequence divergence
+- if the first few trades diverge badly, do not trust the family yet
+
+
+Research Priority From Here
+---------------------------
+1. Continue XAU strategy generation
+- the tooling is good enough for ongoing research
+
+2. Keep using MT5 as final gate
+
+3. Improve family-by-family correlation
+- especially SQX-inspired breakout families
+
+4. Collect more broker-consistent XAU M1 data and MT5 reports
+- consistency matters more than just adding more years
+
+5. Prefer simpler families until correlation improves
+- XAU discovery grammar and simpler pullback/reclaim families are lower-risk for research than heavily approximated SQX clones

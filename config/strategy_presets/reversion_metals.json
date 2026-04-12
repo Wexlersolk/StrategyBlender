@@ -1,0 +1,23 @@
+{
+  "label": "Reversion Metals",
+  "description": "Bollinger and WPR mean-reversion preset designed for volatile metals.",
+  "template": "reversion",
+  "payload": {
+    "name": "Reversion Metals",
+    "symbol": "XAUUSD",
+    "timeframe": "H1",
+    "params": {
+      "BBPeriod": 20,
+      "BBDev": 2.2,
+      "WPRPeriod": 14,
+      "ATRPeriod": 14,
+      "mmLots": 1.0,
+      "StopLossATR": 1.3,
+      "ProfitTargetATR": 1.9,
+      "WPROversold": -82.0,
+      "WPROverbought": -18.0
+    },
+    "min_bars": 25,
+    "lot_value": 100.0
+  }
+}

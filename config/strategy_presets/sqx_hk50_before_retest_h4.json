@@ -1,0 +1,25 @@
+{
+  "label": "SQX HK50 BeforeRetest H4",
+  "description": "Native version of the HK50 H4 BeforeRetest family.",
+  "template": "sqx_hk50_before_retest_h4",
+  "payload": {
+    "name": "SQX HK50 BeforeRetest H4",
+    "symbol": "HK50.cash",
+    "timeframe": "H4",
+    "params": {
+      "RSIPeriod1": 14,
+      "Period1": 50,
+      "SMAPeriod1": 20,
+      "ATRPeriod1": 50,
+      "ATRPeriod2": 19,
+      "ATRPeriod3": 65,
+      "PriceEntryMult1": 0.3,
+      "ProfitTargetCoef1": 3.0,
+      "TrailingActCef1": 1.4,
+      "mmLots": 1.0,
+      "SignalTimeRangeFrom": "00:13",
+      "SignalTimeRangeTo": "00:26"
+    },
+    "lot_value": 0.1285
+  }
+}

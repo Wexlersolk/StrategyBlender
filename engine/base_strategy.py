@@ -41,7 +41,7 @@ class BarContext:
     @property
     def volume(self) -> float: return float(self._df["volume"].iloc[self._i])
     @property
-    def time(self)   -> pd.Timestamp: return self._df.index[self._i]
+    def time(self)   -> pd.Timestamp: return self._bt.session_time(self._df.index[self._i])
     @property
     def bar_index(self) -> int: return self._i
 
@@ -205,6 +205,20 @@ class BarContext:
     @property
     def has_pending(self) -> bool:
         return bool(self._bt._pending_orders)
+
+    @property
+    def long_entry_price(self) -> float:
+        for pos in self._bt._open_positions:
+            if pos.direction == Direction.LONG:
+                return float(pos.entry_price)
+        return float("nan")
+
+    @property
+    def short_entry_price(self) -> float:
+        for pos in self._bt._open_positions:
+            if pos.direction == Direction.SHORT:
+                return float(pos.entry_price)
+        return float("nan")
 
     @property
     def equity(self) -> float:

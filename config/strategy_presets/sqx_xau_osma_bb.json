@@ -1,0 +1,26 @@
+{
+  "label": "SQX XAU OsMA BB",
+  "description": "Native version of the existing XAU Stochastic/OsMA/Bollinger family.",
+  "template": "sqx_xau_osma_bb",
+  "payload": {
+    "name": "SQX XAU OsMA BB",
+    "symbol": "XAUUSD",
+    "timeframe": "H1",
+    "params": {
+      "StochK": 21,
+      "StochD": 7,
+      "StochSlow": 7,
+      "OsmaFast": 8,
+      "OsmaSlow": 17,
+      "OsmaSignal": 9,
+      "BBPeriod": 167,
+      "BBDev": 1.8,
+      "ATRPeriod1": 200,
+      "ATRPeriod2": 55,
+      "mmLots": 1.0,
+      "SignalTimeRangeFrom": "00:00",
+      "SignalTimeRangeTo": "23:59"
+    },
+    "lot_value": 100.0
+  }
+}

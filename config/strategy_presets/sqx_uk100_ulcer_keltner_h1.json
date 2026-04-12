@@ -1,0 +1,24 @@
+{
+  "label": "SQX UK100 Ulcer Keltner H1",
+  "description": "Native version of the UK100 H1 ulcer-index and keltner-channel family.",
+  "template": "sqx_uk100_ulcer_keltner_h1",
+  "payload": {
+    "name": "SQX UK100 Ulcer Keltner H1",
+    "symbol": "UK100.cash",
+    "timeframe": "H1",
+    "params": {
+      "UlcerPeriod": 48,
+      "KCPeriod": 20,
+      "KCMult1": 2.25,
+      "KCMult2": 2.5,
+      "ATR1_period": 50,
+      "ATR2_period": 19,
+      "ATR3_period": 100,
+      "ATR4_period": 14,
+      "mmLots": 1.0,
+      "SignalTimeRangeFrom": "00:13",
+      "SignalTimeRangeTo": "00:26"
+    },
+    "lot_value": 1.0
+  }
+}

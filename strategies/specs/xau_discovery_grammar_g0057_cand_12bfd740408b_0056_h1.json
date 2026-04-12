@@ -1,0 +1,163 @@
+{
+  "allow_entries_when_position_open": false,
+  "description": "Constrained XAU discovery template with mixable approved blocks.",
+  "entries": [
+    {
+      "comment": "xau_discovery_long",
+      "exit_after_bars": null,
+      "expiry_bars": 3,
+      "lots": "float(self.p(\"mmLots\"))",
+      "name": "xau_discovery_long",
+      "order_type": "buy_stop",
+      "price": "float(df[\"highest_level\"].shift(1).iloc[i]) + (float(df[\"atr\"].iloc[i - 1]) * float(self.p(\"EntryBufferATR\")))",
+      "side": "long",
+      "stop_loss": "(float(df[\"highest_level\"].shift(1).iloc[i]) + (float(df[\"atr\"].iloc[i - 1]) * float(self.p(\"EntryBufferATR\")))) - (float(df['atr'].iloc[i - 1]) * float(self.p('StopLossATR')))",
+      "take_profit": "(float(df[\"highest_level\"].shift(1).iloc[i]) + (float(df[\"atr\"].iloc[i - 1]) * float(self.p(\"EntryBufferATR\")))) + (float(df['atr'].iloc[i - 1]) * float(self.p('ProfitTargetATR')))",
+      "trail_activation": null,
+      "trail_dist": null,
+      "when": "bool(df[\"volatility_ok\"].iloc[i]) and _in_time_window(ctx.time, str(self.p(\"SignalTimeRangeFrom\")), str(self.p(\"SignalTimeRangeTo\"))) and bool(df[\"long_signal\"].iloc[i]) and (abs(float(ctx.open) - float(df[\"close\"].iloc[i])) / max(float(ctx.open), 1e-9) * 100.0 <= float(self.p(\"MaxDistancePct\")))"
+    },
+    {
+      "comment": "xau_discovery_short",
+      "exit_after_bars": null,
+      "expiry_bars": 3,
+      "lots": "float(self.p(\"mmLots\"))",
+      "name": "xau_discovery_short",
+      "order_type": "sell_stop",
+      "price": "float(df[\"lowest_level\"].shift(1).iloc[i]) - (float(df[\"atr\"].iloc[i - 1]) * float(self.p(\"EntryBufferATR\")))",
+      "side": "short",
+      "stop_loss": "(float(df[\"lowest_level\"].shift(1).iloc[i]) - (float(df[\"atr\"].iloc[i - 1]) * float(self.p(\"EntryBufferATR\")))) + (float(df['atr'].iloc[i - 1]) * float(self.p('StopLossATR')))",
+      "take_profit": "(float(df[\"lowest_level\"].shift(1).iloc[i]) - (float(df[\"atr\"].iloc[i - 1]) * float(self.p(\"EntryBufferATR\")))) - (float(df['atr'].iloc[i - 1]) * float(self.p('ProfitTargetATR')))",
+      "trail_activation": null,
+      "trail_dist": null,
+      "when": "bool(df[\"volatility_ok\"].iloc[i]) and _in_time_window(ctx.time, str(self.p(\"SignalTimeRangeFrom\")), str(self.p(\"SignalTimeRangeTo\"))) and bool(df[\"short_signal\"].iloc[i]) and (abs(float(ctx.open) - float(df[\"close\"].iloc[i])) / max(float(ctx.open), 1e-9) * 100.0 <= float(self.p(\"MaxDistancePct\")))"
+    }
+  ],
+  "exits": [
+    {
+      "action": "close_all",
+      "name": "session_exit",
+      "when": "ctx.has_position and not _in_time_window(ctx.time, str(self.p(\"SignalTimeRangeFrom\")), str(self.p(\"SignalTimeRangeTo\")))"
+    }
+  ],
+  "indicators": [
+    {
+      "args": {
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        "mode": 2,
+        "open_": "open",
+        "period": {
+          "param": "HighestPeriod"
+        }
+      },
+      "kind": "sq_highest",
+      "name": "highest_level",
+      "outputs": null
+    },
+    {
+      "args": {
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        "mode": 3,
+        "open_": "open",
+        "period": {
+          "param": "LowestPeriod"
+        }
+      },
+      "kind": "sq_lowest",
+      "name": "lowest_level",
+      "outputs": null
+    },
+    {
+      "args": {
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        "period": {
+          "param": "ATRPeriod"
+        }
+      },
+      "kind": "sq_atr",
+      "name": "atr",
+      "outputs": null
+    },
+    {
+      "args": {
+        "deviations": 2.0,
+        "period": {
+          "param": "BBWRPeriod"
+        },
+        "series": "close"
+      },
+      "kind": "sq_bb_width_ratio",
+      "name": "bbwr",
+      "outputs": null
+    },
+    {
+      "args": {
+        "period": {
+          "param": "FastEMA"
+        },
+        "series": "close"
+      },
+      "kind": "ema",
+      "name": "ema_fast",
+      "outputs": null
+    },
+    {
+      "args": {
+        "period": {
+          "param": "SlowEMA"
+        },
+        "series": "close"
+      },
+      "kind": "ema",
+      "name": "ema_slow",
+      "outputs": null
+    }
+  ],
+  "lot_value": 100.0,
+  "min_bars": 40,
+  "name": "XAU Discovery Grammar [G0057]",
+  "params": {
+    "ATRPeriod": 14,
+    "BBWRMin": 0.015,
+    "BBWRPeriod": 24,
+    "BreakEvenATR": 0.8,
+    "EntryBufferATR": 0.15,
+    "ExitAfterBars": 18,
+    "FastEMA": 21,
+    "HighestPeriod": 24,
+    "LowestPeriod": 36,
+    "MaxDistancePct": 5.0,
+    "ProfitTargetATR": 2.8,
+    "PullbackATR": 0.6,
+    "PullbackLookback": 5,
+    "SignalTimeRangeFrom": "06:00",
+    "SignalTimeRangeTo": "18:00",
+    "SlowEMA": 55,
+    "StopLossATR": 1.4,
+    "TimeStopATR": 0.6,
+    "TrailATR": 1.1,
+    "mmLots": 1.0
+  },
+  "series": [
+    {
+      "expression": "df[\"bbwr\"] >= float(self.p(\"BBWRMin\"))",
+      "name": "volatility_ok"
+    },
+    {
+      "expression": "df[\"close\"] > df[\"highest_level\"].shift(1)",
+      "name": "long_signal"
+    },
+    {
+      "expression": "df[\"close\"] < df[\"lowest_level\"].shift(1)",
+      "name": "short_signal"
+    }
+  ],
+  "symbol": "XAUUSD",
+  "timeframe": "H1"
+}

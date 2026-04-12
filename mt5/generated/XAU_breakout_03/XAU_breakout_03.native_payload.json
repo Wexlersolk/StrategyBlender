@@ -1,0 +1,33 @@
+{
+  "name": "XAU Discovery Grammar [G0061]",
+  "symbol": "XAUUSD",
+  "timeframe": "H1",
+  "entry_archetype": "breakout_stop",
+  "volatility_filter": "bb_width",
+  "session_filter": "london_ny",
+  "stop_model": "channel",
+  "target_model": "fixed_rr",
+  "exit_model": "session_close",
+  "params": {
+    "HighestPeriod": 24,
+    "LowestPeriod": 24,
+    "ATRPeriod": 14,
+    "FastEMA": 21,
+    "SlowEMA": 55,
+    "BBWRPeriod": 24,
+    "BBWRMin": 0.01,
+    "EntryBufferATR": 0.25,
+    "StopLossATR": 1.4,
+    "ProfitTargetATR": 2.8,
+    "TrailATR": 1.1,
+    "ExitAfterBars": 18,
+    "PullbackLookback": 5,
+    "PullbackATR": 0.6,
+    "BreakEvenATR": 0.8,
+    "TimeStopATR": 0.4,
+    "MaxDistancePct": 3.5,
+    "mmLots": 1.0
+  },
+  "min_bars": 40,
+  "lot_value": 100.0
+}

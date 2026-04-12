@@ -148,6 +148,7 @@ def _render_manage_tab():
 
     for ea_id, ea in list(eas.items()):
         with st.expander(f"**{ea['name']}**  —  {ea['symbol']} {ea['timeframe']}", expanded=False):
+            is_native_python = ea.get("origin") == "python_template"
             col1, col2, col3 = st.columns([3, 2, 1])
 
             with col1:
@@ -156,6 +157,8 @@ def _render_manage_tab():
                 st.markdown(
                     f"**Converted functions:** {len(ea.get('conversion_functions', []))}"
                 )
+                if is_native_python:
+                    st.markdown("**Origin:** Native Python template strategy")
                 if ea.get("params"):
                     param_str = "  |  ".join(
                         f"{k}: {v}" for k, v in list(ea["params"].items())[:6]
@@ -167,38 +170,41 @@ def _render_manage_tab():
                         st.warning(warning, icon="⚠️")
 
             with col2:
-                new_symbol = st.selectbox(
-                    "Symbol", SYMBOLS_COMMON,
-                    index=SYMBOLS_COMMON.index(ea["symbol"]) if ea["symbol"] in SYMBOLS_COMMON else 0,
-                    key=f"sym_{ea_id}"
-                )
-                new_tf = st.selectbox(
-                    "Timeframe", TIMEFRAMES,
-                    index=TIMEFRAMES.index(ea["timeframe"]) if ea["timeframe"] in TIMEFRAMES else 4,
-                    key=f"tf_{ea_id}"
-                )
-                if st.button("Update", key=f"upd_{ea_id}"):
-                    updated = convert_ea_source(
-                        source=ea["source"],
-                        strategy_name=ea["name"],
-                        symbol=new_symbol,
-                        timeframe=new_tf,
-                        ea_id=ea_id,
+                if is_native_python:
+                    st.caption("Edit native strategies in `Strategy Builder` and regenerate them there.")
+                else:
+                    new_symbol = st.selectbox(
+                        "Symbol", SYMBOLS_COMMON,
+                        index=SYMBOLS_COMMON.index(ea["symbol"]) if ea["symbol"] in SYMBOLS_COMMON else 0,
+                        key=f"sym_{ea_id}"
                     )
-                    paths = persist_converted_ea(updated, ea["name"])
-                    st.session_state["eas"][ea_id]["symbol"]    = new_symbol
-                    st.session_state["eas"][ea_id]["timeframe"] = new_tf
-                    st.session_state["eas"][ea_id]["params"] = updated.params
-                    st.session_state["eas"][ea_id]["review_source"] = updated.review_source
-                    st.session_state["eas"][ea_id]["engine_source"] = updated.engine_source
-                    st.session_state["eas"][ea_id]["strategy_path"] = paths["engine_path"]
-                    st.session_state["eas"][ea_id]["review_path"] = paths["review_path"]
-                    st.session_state["eas"][ea_id]["strategy_module"] = updated.strategy_module
-                    st.session_state["eas"][ea_id]["strategy_class"] = updated.strategy_class
-                    st.session_state["eas"][ea_id]["conversion_warnings"] = updated.warnings
-                    st.session_state["eas"][ea_id]["conversion_functions"] = updated.functions
-                    autosave()
-                    st.rerun()
+                    new_tf = st.selectbox(
+                        "Timeframe", TIMEFRAMES,
+                        index=TIMEFRAMES.index(ea["timeframe"]) if ea["timeframe"] in TIMEFRAMES else 4,
+                        key=f"tf_{ea_id}"
+                    )
+                    if st.button("Update", key=f"upd_{ea_id}"):
+                        updated = convert_ea_source(
+                            source=ea["source"],
+                            strategy_name=ea["name"],
+                            symbol=new_symbol,
+                            timeframe=new_tf,
+                            ea_id=ea_id,
+                        )
+                        paths = persist_converted_ea(updated, ea["name"])
+                        st.session_state["eas"][ea_id]["symbol"]    = new_symbol
+                        st.session_state["eas"][ea_id]["timeframe"] = new_tf
+                        st.session_state["eas"][ea_id]["params"] = updated.params
+                        st.session_state["eas"][ea_id]["review_source"] = updated.review_source
+                        st.session_state["eas"][ea_id]["engine_source"] = updated.engine_source
+                        st.session_state["eas"][ea_id]["strategy_path"] = paths["engine_path"]
+                        st.session_state["eas"][ea_id]["review_path"] = paths["review_path"]
+                        st.session_state["eas"][ea_id]["strategy_module"] = updated.strategy_module
+                        st.session_state["eas"][ea_id]["strategy_class"] = updated.strategy_class
+                        st.session_state["eas"][ea_id]["conversion_warnings"] = updated.warnings
+                        st.session_state["eas"][ea_id]["conversion_functions"] = updated.functions
+                        autosave()
+                        st.rerun()
 
             with col3:
                 ai_on = st.toggle("AI", value=ea.get("ai_enabled", False), key=f"ai_{ea_id}")

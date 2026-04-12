@@ -97,6 +97,12 @@ class Backtester:
         spread_pips:        float = 0.0,
         slippage_pips:      float = 0.0,
         tick_size:          float = 1.0,
+        tick_value:         float = 0.0,
+        contract_size:      float = 0.0,
+        swap_per_lot_long:  float = 0.0,
+        swap_per_lot_short: float = 0.0,
+        session_timezone_offset_hours: float = 0.0,
+        use_bar_spread:     bool  = False,
         lot_value:          float = 1.0,
         intrabar_steps:     int   = 1,    # 1 = standard OHLC, 60 = M1-like
         seed:               int   = 42,
@@ -108,6 +114,12 @@ class Backtester:
         self.spread_pips        = spread_pips
         self.slippage_pips      = slippage_pips
         self.tick_size          = tick_size
+        self.tick_value         = tick_value
+        self.contract_size      = contract_size
+        self.swap_per_lot_long  = swap_per_lot_long
+        self.swap_per_lot_short = swap_per_lot_short
+        self.session_timezone_offset_hours = session_timezone_offset_hours
+        self.use_bar_spread     = use_bar_spread
         self.lot_value          = lot_value
         self.intrabar_steps     = intrabar_steps
         self.verbose            = verbose
@@ -124,6 +136,24 @@ class Backtester:
         self._decision_records: List[DecisionRecord] = []
         self._current_strategy: Optional[BaseStrategy] = None
         self._price_df: Optional[pd.DataFrame] = None
+        self._debug_events: list[dict[str, object]] = []
+        self._balance_curve_points: list[float] = []
+        self._equity_curve_points: list[float] = []
+        self._equity_worst_curve_points: list[float] = []
+        self._curve_times: list[pd.Timestamp] = []
+
+    def _bar_interval(self) -> pd.Timedelta | None:
+        timeframe = str(getattr(self._current_strategy, "timeframe", "") or "").upper()
+        mapping = {
+            "M1": pd.Timedelta(minutes=1),
+            "M5": pd.Timedelta(minutes=5),
+            "M15": pd.Timedelta(minutes=15),
+            "M30": pd.Timedelta(minutes=30),
+            "H1": pd.Timedelta(hours=1),
+            "H4": pd.Timedelta(hours=4),
+            "D1": pd.Timedelta(days=1),
+        }
+        return mapping.get(timeframe)
 
     def _normalized_symbol(self) -> str:
         symbol = getattr(self._current_strategy, "symbol", "") or ""
@@ -139,15 +169,18 @@ class Backtester:
         return symbol
 
     def _profit_multiplier(self, exit_price: float) -> float:
+        if self.tick_size > 0 and self.tick_value > 0:
+            return float(self.tick_value) / float(self.tick_size)
+
         symbol = self._normalized_symbol()
 
         if symbol == "XAUUSD":
-            return 100.0
+            return float(self.contract_size) if self.contract_size > 0 else 100.0
         if symbol == "XAGUSD":
             return 5_000.0
 
         if len(symbol) == 6 and symbol.isalpha():
-            contract_size = 100_000.0
+            contract_size = float(self.contract_size) if self.contract_size > 0 else 100_000.0
             base = symbol[:3]
             quote = symbol[3:]
             if quote == "USD":
@@ -157,12 +190,44 @@ class Backtester:
 
         return self.lot_value
 
-    def _apply_entry_execution_price(self, direction: Direction, price: float) -> float:
+    def session_time(self, ts: pd.Timestamp) -> pd.Timestamp:
+        if abs(float(self.session_timezone_offset_hours)) < 1e-9:
+            return ts
+        return ts + pd.to_timedelta(float(self.session_timezone_offset_hours), unit="h")
+
+    def _bar_spread(self, bar_idx: int) -> float:
+        if not self.use_bar_spread or self._price_df is None or "spread" not in self._price_df.columns:
+            return float(self.spread_pips)
+        if bar_idx < 0 or bar_idx >= len(self._price_df.index):
+            return float(self.spread_pips)
+        raw = pd.to_numeric(self._price_df["spread"].iloc[bar_idx], errors="coerce")
+        if pd.isna(raw):
+            return float(self.spread_pips)
+        spread = float(raw) * float(self.tick_size)
+        return spread if spread > 0.0 else float(self.spread_pips)
+
+    def _apply_entry_execution_price(
+        self,
+        direction: Direction,
+        price: float,
+        *,
+        spread: float = 0.0,
+    ) -> float:
+        if direction == Direction.LONG:
+            price = float(price) + float(spread)
         if direction == Direction.LONG:
             return float(price) + float(self.slippage_pips)
         return float(price) - float(self.slippage_pips)
 
-    def _apply_exit_execution_price(self, direction: Direction, price: float) -> float:
+    def _apply_exit_execution_price(
+        self,
+        direction: Direction,
+        price: float,
+        *,
+        spread: float = 0.0,
+    ) -> float:
+        if direction == Direction.SHORT:
+            price = float(price) + float(spread)
         if direction == Direction.LONG:
             return float(price) - float(self.slippage_pips)
         return float(price) + float(self.slippage_pips)
@@ -186,18 +251,21 @@ class Backtester:
         self._closed_trades   = []
         self._decision_records = []
         self._current_strategy = strategy
+        self._debug_events = []
+        self._balance_curve_points = []
+        self._equity_curve_points = []
+        self._equity_worst_curve_points = []
+        self._curve_times = []
 
-        if date_from:
-            df = df[df.index >= pd.Timestamp(date_from)]
-        if date_to:
-            df = df[df.index <= pd.Timestamp(date_to)]
+        sim_date_from = pd.Timestamp(date_from) if date_from else None
+        sim_date_to = pd.Timestamp(date_to) if date_to else None
+        if sim_date_to is not None:
+            df = df[df.index <= sim_date_to]
         if intrabar_df is not None:
             intrabar_df = intrabar_df.copy()
             intrabar_df.columns = [c.lower() for c in intrabar_df.columns]
-            if date_from:
-                intrabar_df = intrabar_df[intrabar_df.index >= pd.Timestamp(date_from)]
-            if date_to:
-                intrabar_df = intrabar_df[intrabar_df.index <= pd.Timestamp(date_to)]
+            if sim_date_to is not None:
+                intrabar_df = intrabar_df[intrabar_df.index <= sim_date_to]
 
         if df.empty:
             raise ValueError("No data in the specified date range.")
@@ -212,11 +280,33 @@ class Backtester:
         df = df.ffill().fillna(0)
 
         strategy.on_start(df)
+        start_pos = 0
+        if sim_date_from is not None:
+            candidates = np.flatnonzero(df.index >= sim_date_from)
+            if len(candidates) == 0:
+                raise ValueError("No data in the specified date range.")
+            start_pos = int(candidates[0])
+        end_pos = len(df) - 1
+        if sim_date_to is not None:
+            candidates = np.flatnonzero(df.index <= sim_date_to)
+            if len(candidates) == 0:
+                raise ValueError("No data in the specified date range.")
+            end_pos = int(candidates[-1])
+        if start_pos >= len(df) or start_pos > end_pos:
+            raise ValueError("No data in the specified date range.")
+
+        self._record_curve_point(
+            df.index[start_pos],
+            float(df["close"].iloc[start_pos]),
+            float(df["low"].iloc[start_pos]),
+            float(df["high"].iloc[start_pos]),
+            start_pos,
+        )
 
         warmup = 60
         use_intrabar = self.intrabar_steps > 1
 
-        for i in range(1, len(df)):
+        for i in range(max(1, start_pos), end_pos + 1):
             t     = df.index[i]
             bar   = df.iloc[i]
             open_ = float(bar["open"])
@@ -224,13 +314,16 @@ class Backtester:
             low   = float(bar["low"])
             close = float(bar["close"])
 
-            # 1. Check pending order triggers
-            self._check_pending_triggers(df, i)
-
-            # 2. Expire unfilled orders
-            self._expire_pending(i)
+            # 1. Expire unfilled orders / time-based exits at bar open
+            self._expire_pending(i, t)
             self._expire_positions(i, t, open_)
 
+            # 2. Strategy acts at bar open like MT5 EAs on a new bar tick.
+            if i >= warmup:
+                ctx = BarContext(df, i, self)
+                strategy.on_bar(ctx)
+
+            # 3. Replay bar path for all active positions/orders, including those created at this bar open.
             if use_intrabar and (self._open_positions or self._pending_orders):
                 next_t = (
                     df.index[i + 1]
@@ -284,23 +377,29 @@ class Backtester:
 
             else:
                 # ── Standard OHLC mode ────────────────────────────────────────
+                self._check_pending_triggers(df, i)
                 self._check_sl_tp(df, i)
                 self._update_trailing(df, i)
 
-            # 3. Update equity
+            # 4. Update equity and curves
             self._update_equity(df, i)
-
-            # 4. Call strategy
-            if i >= warmup:
-                ctx = BarContext(df, i, self)
-                strategy.on_bar(ctx)
+            self._record_curve_point(t, close, low, high, i)
 
         # Close remaining positions at last bar
-        last_bar   = len(df) - 1
+        last_bar   = end_pos
         last_time  = df.index[last_bar]
         last_close = float(df["close"].iloc[last_bar])
         self._close_all(last_bar, last_time, last_close,
                         reason=CloseReason.END_OF_TEST)
+        self._update_equity(df, last_bar)
+        self._record_curve_point(last_time, last_close, float(df["low"].iloc[last_bar]), float(df["high"].iloc[last_bar]), last_bar)
+
+        balance_curve = pd.Series(self._balance_curve_points, index=self._curve_times, dtype=float)
+        equity_curve = pd.Series(self._equity_curve_points, index=self._curve_times, dtype=float)
+        equity_worst_curve = pd.Series(self._equity_worst_curve_points, index=self._curve_times, dtype=float)
+        balance_curve = balance_curve[~balance_curve.index.duplicated(keep="last")]
+        equity_curve = equity_curve[~equity_curve.index.duplicated(keep="last")]
+        equity_worst_curve = equity_worst_curve[~equity_worst_curve.index.duplicated(keep="last")]
 
         results = BacktestResults(
             trades          = self._closed_trades,
@@ -308,9 +407,13 @@ class Backtester:
             initial_capital = self.initial_capital,
             symbol          = getattr(strategy, "symbol", ""),
             timeframe       = getattr(strategy, "timeframe", ""),
-            date_from       = df.index[0],
-            date_to         = df.index[-1],
+            date_from       = df.index[start_pos],
+            date_to         = df.index[end_pos],
             params          = strategy.params.copy(),
+            balance_curve_series=balance_curve,
+            equity_curve_series=equity_curve,
+            equity_worst_curve_series=equity_worst_curve,
+            debug_events=list(self._debug_events),
         )
 
         strategy.on_end(results)
@@ -432,6 +535,7 @@ class Backtester:
                 exit_after_bars=intent.exit_after_bars,
                 decision_id=decision_id,
                 requested_lots=requested_lots,
+                preserve_exit_offsets=True,
             )
         return self._place_pending(
             intent.order_type,
@@ -441,6 +545,7 @@ class Backtester:
             intent.take_profit,
             intent.lots,
             intent.bar_idx,
+            intent.time,
             intent.expiry_bars,
             intent.comment,
             decision_id=decision_id,
@@ -450,17 +555,31 @@ class Backtester:
     def _place_pending(
         self, order_type: OrderType, direction: Direction,
         price: float, sl: float, tp: float, lots: float,
-        bar_idx: int, expiry_bars: int, comment: str,
+        bar_idx: int, time: pd.Timestamp, expiry_bars: int, comment: str,
         decision_id: int = 0, requested_lots: float = 0.0,
     ) -> int:
         oid = self._next_id()
         self._pending_orders.append(PendingOrder(
             id=oid, order_type=order_type, direction=direction,
             entry_price=price, stop_loss=sl, take_profit=tp,
-            lots=lots, opened_bar=bar_idx,
+            lots=lots, opened_bar=bar_idx, opened_time=time,
             expiry_bars=expiry_bars, comment=comment
             , decision_id=decision_id, requested_lots=requested_lots or lots
         ))
+        self._debug_events.append(
+            {
+                "kind": "pending_placed",
+                "order_id": oid,
+                "time": time,
+                "bar_idx": bar_idx,
+                "order_type": order_type.value,
+                "direction": direction.value,
+                "entry_price": float(price),
+                "stop_loss": float(sl),
+                "take_profit": float(tp),
+                "comment": comment,
+            }
+        )
         return oid
 
     def _open_position(
@@ -471,11 +590,18 @@ class Backtester:
         exit_after_bars: int = 0,
         decision_id: int = 0,
         requested_lots: float = 0.0,
+        preserve_exit_offsets: bool = False,
     ) -> int:
         pid = self._next_id()
-        if direction == Direction.LONG:
-            price += self.spread_pips
-        price = self._apply_entry_execution_price(direction, price)
+        spread = self._bar_spread(bar_idx)
+        requested_entry_price = float(price)
+        price = self._apply_entry_execution_price(direction, requested_entry_price, spread=spread)
+        if preserve_exit_offsets:
+            execution_delta = float(price) - requested_entry_price
+            if sl:
+                sl = float(sl) + execution_delta
+            if tp:
+                tp = float(tp) + execution_delta
         pos = Position(
             id=pid, direction=direction, entry_price=price,
             stop_loss=sl, take_profit=tp, lots=lots,
@@ -498,9 +624,13 @@ class Backtester:
         bar_idx: int, time: pd.Timestamp,
         reason: CloseReason
     ):
-        exit_price = self._apply_exit_execution_price(pos.direction, exit_price)
+        spread = self._bar_spread(bar_idx)
+        exit_price = self._apply_exit_execution_price(pos.direction, exit_price, spread=spread)
         gross = self._calc_profit(pos, exit_price)
         comm  = self.commission_per_lot * pos.lots * 2
+        hold_days = max(0.0, (time - pos.opened_time).total_seconds() / 86400.0)
+        swap_rate = self.swap_per_lot_long if pos.direction == Direction.LONG else self.swap_per_lot_short
+        swap = float(swap_rate) * float(pos.lots) * hold_days
         trade = ClosedTrade(
             id=pos.id, direction=pos.direction,
             entry_price=pos.entry_price, exit_price=exit_price,
@@ -508,7 +638,7 @@ class Backtester:
             lots=pos.lots, opened_bar=pos.opened_bar, closed_bar=bar_idx,
             opened_time=pos.opened_time, closed_time=time,
             close_reason=reason,
-            gross_profit=gross, commission=comm, swap=0.0,
+            gross_profit=gross, commission=comm, swap=swap,
             comment=pos.comment,
             decision_id=pos.decision_id,
             requested_lots=pos.requested_lots,
@@ -557,6 +687,22 @@ class Backtester:
         t = time
 
         for order in list(self._pending_orders):
+            if self.intrabar_steps > 1 and time <= order.opened_time:
+                continue
+            if order.first_eligible_time is None:
+                order.first_eligible_time = time
+                self._debug_events.append(
+                    {
+                        "kind": "pending_first_eligible",
+                        "order_id": order.id,
+                        "time": time,
+                        "bar_idx": bar_idx,
+                        "order_type": order.order_type.value,
+                        "direction": order.direction.value,
+                        "entry_price": float(order.entry_price),
+                        "comment": order.comment,
+                    }
+                )
             triggered  = False
             fill_price = order.entry_price
 
@@ -579,6 +725,20 @@ class Backtester:
 
             if triggered:
                 self._pending_orders.remove(order)
+                self._debug_events.append(
+                    {
+                        "kind": "pending_filled",
+                        "order_id": order.id,
+                        "time": t,
+                        "bar_idx": bar_idx,
+                        "order_type": order.order_type.value,
+                        "direction": order.direction.value,
+                        "entry_price": float(order.entry_price),
+                        "fill_price": float(fill_price),
+                        "first_eligible_time": order.first_eligible_time,
+                        "comment": order.comment,
+                    }
+                )
                 trail_dist = getattr(self._current_strategy,
                                      '_next_trail_dist', 0.0)
                 trail_act  = getattr(self._current_strategy,
@@ -663,26 +823,73 @@ class Backtester:
                 if pos.stop_loss == 0 or new_sl < pos.stop_loss:
                     pos.stop_loss = new_sl
 
-    def _expire_pending(self, current_bar: int):
-        to_remove = [
-            o for o in self._pending_orders
-            if o.expiry_bars > 0 and current_bar - o.opened_bar >= o.expiry_bars
-        ]
+    def _expire_pending(self, current_bar: int, time: pd.Timestamp):
+        bar_interval = self._bar_interval()
+        to_remove = []
+        for order in self._pending_orders:
+            if order.expiry_bars <= 0:
+                continue
+            expired = False
+            if bar_interval is not None:
+                expires_at = order.opened_time + (bar_interval * int(order.expiry_bars))
+                expired = time >= expires_at
+            else:
+                expired = current_bar - order.opened_bar >= order.expiry_bars
+            if expired:
+                to_remove.append(order)
         for order in to_remove:
             self._pending_orders.remove(order)
 
     def _expire_positions(self, current_bar: int, time: pd.Timestamp, open_price: float):
-        to_close = [
-            p for p in self._open_positions
-            if p.exit_after_bars > 0 and current_bar - p.opened_bar >= p.exit_after_bars
-        ]
+        bar_interval = self._bar_interval()
+        to_close = []
+        for pos in self._open_positions:
+            if pos.exit_after_bars <= 0:
+                continue
+            expired = False
+            if bar_interval is not None:
+                expires_at = pos.opened_time + (bar_interval * int(pos.exit_after_bars))
+                expired = time >= expires_at
+            else:
+                expired = current_bar - pos.opened_bar >= pos.exit_after_bars
+            if expired:
+                to_close.append(pos)
         for pos in to_close:
             self._close_position(pos, open_price, current_bar, time, CloseReason.SIGNAL)
 
     def _update_equity(self, df: pd.DataFrame, i: int):
         close    = float(df["close"].iloc[i])
+        spread = self._bar_spread(i)
         floating = sum(
-            self._calc_profit(pos, close)
+            self._calc_profit(
+                pos,
+                self._apply_exit_execution_price(pos.direction, close, spread=spread),
+            )
             for pos in self._open_positions
         )
         self._equity = self._balance + floating
+
+    def _worst_case_equity(self, low: float, high: float, bar_idx: int) -> float:
+        spread = self._bar_spread(bar_idx)
+        floating = 0.0
+        for pos in self._open_positions:
+            worst_price = low if pos.direction == Direction.LONG else high
+            floating += self._calc_profit(
+                pos,
+                self._apply_exit_execution_price(pos.direction, worst_price, spread=spread),
+            )
+        return self._balance + floating
+
+    def _record_curve_point(self, time: pd.Timestamp, close: float, low: float, high: float, bar_idx: int):
+        spread = self._bar_spread(bar_idx)
+        floating_close = sum(
+            self._calc_profit(
+                pos,
+                self._apply_exit_execution_price(pos.direction, close, spread=spread),
+            )
+            for pos in self._open_positions
+        )
+        self._curve_times.append(time)
+        self._balance_curve_points.append(float(self._balance))
+        self._equity_curve_points.append(float(self._balance + floating_close))
+        self._equity_worst_curve_points.append(float(self._worst_case_equity(low, high, bar_idx)))

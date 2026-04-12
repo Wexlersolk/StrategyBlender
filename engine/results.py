@@ -9,7 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from dataclasses import dataclass
-from typing import List
+from typing import Any, List
 from engine.position import ClosedTrade, CloseReason
 from engine.policy import DecisionRecord
 
@@ -24,6 +24,10 @@ class BacktestResults:
     date_from:     pd.Timestamp
     date_to:       pd.Timestamp
     params:        dict
+    balance_curve_series: pd.Series | None = None
+    equity_curve_series: pd.Series | None = None
+    equity_worst_curve_series: pd.Series | None = None
+    debug_events: list[dict[str, Any]] | None = None
 
     # ── Computed properties ───────────────────────────────────────────────────
 
@@ -37,11 +41,25 @@ class BacktestResults:
 
     @property
     def equity_curve(self) -> pd.Series:
+        if self.equity_curve_series is not None:
+            return self.equity_curve_series
         if not self.trades:
             return pd.Series([self.initial_capital], dtype=float)
         times  = [t.closed_time for t in self.trades]
         equity = self.initial_capital + np.cumsum(self.profits)
         return pd.Series(equity, index=times)
+
+    @property
+    def balance_curve(self) -> pd.Series:
+        if self.balance_curve_series is not None:
+            return self.balance_curve_series
+        return self.equity_curve
+
+    @property
+    def worst_equity_curve(self) -> pd.Series:
+        if self.equity_worst_curve_series is not None:
+            return self.equity_worst_curve_series
+        return self.equity_curve
 
     @property
     def net_profit(self) -> float:
@@ -97,15 +115,21 @@ class BacktestResults:
     @property
     def balance_drawdown_maximal(self) -> tuple[float, float]:
         """Closed-trade balance drawdown: ($, %)."""
-        return self.max_drawdown
+        curve = self.balance_curve.astype(float)
+        peak = curve.cummax()
+        dd = peak - curve
+        abs_dd = float(dd.max()) if len(dd) else 0.0
+        rel_dd = float(((dd / peak.replace(0.0, np.nan)).fillna(0.0)).max() * 100.0) if len(dd) else 0.0
+        return abs_dd, rel_dd
 
     @property
     def equity_drawdown_maximal(self) -> tuple[float, float]:
-        """
-        Equity drawdown: ($, %).
-        Currently based on the same realized-trade equity series used by the engine summary.
-        """
-        return self.max_drawdown
+        curve = self.worst_equity_curve.astype(float)
+        peak = curve.cummax()
+        dd = peak - curve
+        abs_dd = float(dd.max()) if len(dd) else 0.0
+        rel_dd = float(((dd / peak.replace(0.0, np.nan)).fillna(0.0)).max() * 100.0) if len(dd) else 0.0
+        return abs_dd, rel_dd
 
     @property
     def sharpe_ratio(self) -> float:

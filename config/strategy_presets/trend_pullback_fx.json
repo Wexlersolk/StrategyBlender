@@ -1,0 +1,24 @@
+{
+  "label": "Trend Pullback FX",
+  "description": "Conservative FX trend continuation preset using EMA structure and WaveTrend confirmation.",
+  "template": "trend_pullback",
+  "payload": {
+    "name": "Trend Pullback FX",
+    "symbol": "EURUSD",
+    "timeframe": "H1",
+    "direction": "long",
+    "params": {
+      "FastEMA": 21,
+      "SlowEMA": 55,
+      "ATRPeriod": 14,
+      "mmLots": 1.0,
+      "StopLossATR": 1.8,
+      "ProfitTargetATR": 2.7,
+      "WaveTrendChannel": 9,
+      "WaveTrendAverage": 21,
+      "ExitAfterBars": 12
+    },
+    "min_bars": 55,
+    "lot_value": 1.0
+  }
+}

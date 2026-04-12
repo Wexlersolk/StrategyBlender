@@ -96,6 +96,7 @@ def _render_sidebar():
     pages = {
         "Dashboard":   "📊",
         "EA Manager":  "🤖",
+        "Strategy Builder": "🧩",
         "Backtests":   "▶️",
         "AI Training": "🧠",
         "Experiments": "🧪",
@@ -200,6 +201,9 @@ def _render_page():
         render()
     elif page == "EA Manager":
         from ui.views.ea_manager import render
+        render()
+    elif page == "Strategy Builder":
+        from ui.views.strategy_builder import render
         render()
     elif page == "Backtests":
         from ui.views.backtests import render

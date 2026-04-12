@@ -1,0 +1,23 @@
+{
+  "label": "SQX HK50 AfterRetest H4",
+  "description": "Native version of the HK50 H4 AfterRetest family.",
+  "template": "sqx_hk50_after_retest_h4",
+  "payload": {
+    "name": "SQX HK50 AfterRetest H4",
+    "symbol": "HK50.cash",
+    "timeframe": "H4",
+    "params": {
+      "DIPeriod1": 14,
+      "SARStep": 0.266,
+      "SARMax": 0.69,
+      "ATRPeriod1": 20,
+      "PriceEntryMult1": 0.3,
+      "StopLossATR": 2.0,
+      "ProfitTargetATR": 3.0,
+      "mmLots": 1.0,
+      "SignalTimeRangeFrom": "00:13",
+      "SignalTimeRangeTo": "00:26"
+    },
+    "lot_value": 0.1285
+  }
+}

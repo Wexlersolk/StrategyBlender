@@ -1,0 +1,286 @@
+{
+  "allow_entries_when_position_open": false,
+  "description": "SQX-inspired XAU highest-breakout family mined from Batch12.04, with stop entries and ATR-managed exits.",
+  "entries": [
+    {
+      "comment": "sqx_xau_highest_breakout_long",
+      "exit_after_bars": null,
+      "expiry_bars": 10,
+      "lots": "float(self.p(\"mmLots\"))",
+      "name": "sqx_xau_highest_breakout_long",
+      "order_type": "buy_stop",
+      "price": "float(df[\"highest_level\"].shift(1).iloc[i])",
+      "side": "long",
+      "stop_loss": "float(df[\"highest_level\"].shift(1).iloc[i]) - float(self.p(\"LongStopATR\")) * float(df[\"atr_long_stop\"].iloc[i - 1])",
+      "take_profit": "float(df[\"highest_level\"].shift(1).iloc[i]) + float(self.p(\"LongTargetATR\")) * float(df[\"atr_long_target\"].iloc[i - 1])",
+      "trail_activation": "float(self.p(\"LongTrailActivationATR\")) * float(df[\"atr_long_trail\"].iloc[i - 1])",
+      "trail_dist": "float(self.p(\"LongTrailATR\")) * float(df[\"atr_long_trail\"].iloc[i - 1])",
+      "when": "bool(df[\"long_signal\"].shift(1).eq(True).iloc[i]) and not bool(df[\"short_signal\"].shift(1).eq(True).iloc[i]) and _in_time_window(ctx.time, str(self.p(\"SignalTimeRangeFrom\")), str(self.p(\"SignalTimeRangeTo\"))) and (abs(float(ctx.open) - float(df[\"highest_level\"].shift(1).iloc[i])) / max(float(ctx.open), 1e-9) * 100.0 <= float(self.p(\"MaxDistancePct\")))"
+    },
+    {
+      "comment": "sqx_xau_highest_breakout_short",
+      "exit_after_bars": null,
+      "expiry_bars": 18,
+      "lots": "float(self.p(\"mmLots\"))",
+      "name": "sqx_xau_highest_breakout_short",
+      "order_type": "sell_stop",
+      "price": "float(df[\"lowest_level\"].shift(1).iloc[i])",
+      "side": "short",
+      "stop_loss": "float(df[\"lowest_level\"].shift(1).iloc[i]) + float(self.p(\"ShortStopATR\")) * float(df[\"atr_short_stop\"].iloc[i - 1])",
+      "take_profit": "float(df[\"lowest_level\"].shift(1).iloc[i]) - float(self.p(\"ShortTargetATR\")) * float(df[\"atr_short_target\"].iloc[i - 1])",
+      "trail_activation": "float(self.p(\"ShortTrailActivationATR\")) * float(df[\"atr_short_target\"].iloc[i - 1])",
+      "trail_dist": "float(self.p(\"ShortTrailATR\")) * float(df[\"atr_short_target\"].iloc[i - 1])",
+      "when": "bool(df[\"short_signal\"].shift(1).eq(True).iloc[i]) and not bool(df[\"long_signal\"].shift(1).eq(True).iloc[i]) and _in_time_window(ctx.time, str(self.p(\"SignalTimeRangeFrom\")), str(self.p(\"SignalTimeRangeTo\"))) and (abs(float(ctx.open) - float(df[\"lowest_level\"].shift(1).iloc[i])) / max(float(ctx.open), 1e-9) * 100.0 <= float(self.p(\"MaxDistancePct\")))"
+    }
+  ],
+  "exits": [
+    {
+      "action": "close_all",
+      "name": "session_exit",
+      "when": "ctx.has_position and not _in_time_window(ctx.time, str(self.p(\"SignalTimeRangeFrom\")), str(self.p(\"SignalTimeRangeTo\")))"
+    }
+  ],
+  "indicators": [
+    {
+      "args": {
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        "mode": 2,
+        "open_": "open",
+        "period": {
+          "param": "HighestPeriod"
+        }
+      },
+      "kind": "sq_highest",
+      "name": "highest_level",
+      "outputs": null
+    },
+    {
+      "args": {
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        "mode": 3,
+        "open_": "open",
+        "period": {
+          "param": "LowestPeriod"
+        }
+      },
+      "kind": "sq_lowest",
+      "name": "lowest_level",
+      "outputs": null
+    },
+    {
+      "args": {
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        "mode": 5,
+        "open_": "open"
+      },
+      "kind": "select_price",
+      "name": "typical_price",
+      "outputs": null
+    },
+    {
+      "args": {
+        "period": {
+          "param": "FastSMAPeriod"
+        },
+        "series": "close"
+      },
+      "kind": "sma",
+      "name": "sma_fast",
+      "outputs": null
+    },
+    {
+      "args": {
+        "period": {
+          "param": "LWMAPeriod"
+        },
+        "series": "close"
+      },
+      "kind": "wma",
+      "name": "lwma_fast",
+      "outputs": null
+    },
+    {
+      "args": {
+        "period": {
+          "param": "ShortLWMAPeriod"
+        },
+        "series": "close"
+      },
+      "kind": "wma",
+      "name": "lwma_short",
+      "outputs": null
+    },
+    {
+      "args": {
+        "period": {
+          "param": "SMMAPeriod"
+        },
+        "series": "typical_price"
+      },
+      "kind": "smma",
+      "name": "smma_mid",
+      "outputs": null
+    },
+    {
+      "args": {
+        "df": "df"
+      },
+      "kind": "sq_heiken_ashi",
+      "name": "ha",
+      "outputs": {
+        "close": "ha_close",
+        "open": "ha_open"
+      }
+    },
+    {
+      "args": {
+        "average_length": {
+          "param": "WaveTrendAverage"
+        },
+        "channel_length": {
+          "param": "WaveTrendChannel"
+        },
+        "close": "close",
+        "high": "high",
+        "low": "low"
+      },
+      "kind": "sq_wave_trend",
+      "name": "wt",
+      "outputs": {
+        "main": "wt_main"
+      }
+    },
+    {
+      "args": {
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        "period": {
+          "param": "ATRLongStopPeriod"
+        }
+      },
+      "kind": "sq_atr",
+      "name": "atr_long_stop",
+      "outputs": null
+    },
+    {
+      "args": {
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        "period": {
+          "param": "ATRLongTargetPeriod"
+        }
+      },
+      "kind": "sq_atr",
+      "name": "atr_long_target",
+      "outputs": null
+    },
+    {
+      "args": {
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        "period": {
+          "param": "ATRLongTrailPeriod"
+        }
+      },
+      "kind": "sq_atr",
+      "name": "atr_long_trail",
+      "outputs": null
+    },
+    {
+      "args": {
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        "period": {
+          "param": "ATRShortStopPeriod"
+        }
+      },
+      "kind": "sq_atr",
+      "name": "atr_short_stop",
+      "outputs": null
+    },
+    {
+      "args": {
+        "close": "close",
+        "high": "high",
+        "low": "low",
+        "period": {
+          "param": "ATRShortTargetPeriod"
+        }
+      },
+      "kind": "sq_atr",
+      "name": "atr_short_target",
+      "outputs": null
+    }
+  ],
+  "lot_value": 100.0,
+  "min_bars": 80,
+  "name": "SQX XAU Highest Breakout [01]",
+  "params": {
+    "ATRLongStopPeriod": 14,
+    "ATRLongTargetPeriod": 14,
+    "ATRLongTrailPeriod": 40,
+    "ATRShortStopPeriod": 14,
+    "ATRShortTargetPeriod": 19,
+    "FastSMAPeriod": 10,
+    "HAFloorMAPeriod": 67,
+    "HighestPeriod": 245,
+    "HourQuantileLookback": 809,
+    "HourQuantileThreshold": 66.5,
+    "LWMAPeriod": 54,
+    "LongExpiryBars": 10,
+    "LongStopATR": 2.0,
+    "LongTargetATR": 3.5,
+    "LongTrailATR": 1.0,
+    "LongTrailActivationATR": 0.0,
+    "LowestPeriod": 245,
+    "MaxDistancePct": 6.0,
+    "PullbackSignalPeriod": 10,
+    "SMMAPeriod": 30,
+    "ShortExpiryBars": 18,
+    "ShortLWMAPeriod": 14,
+    "ShortStopATR": 1.5,
+    "ShortTargetATR": 4.8,
+    "ShortTrailATR": 0.0,
+    "ShortTrailActivationATR": 0.0,
+    "SignalMAPeriod": 57,
+    "SignalTimeRangeFrom": "00:00",
+    "SignalTimeRangeTo": "23:59",
+    "WaveTrendAverage": 21,
+    "WaveTrendChannel": 9,
+    "mmLots": 1.0
+  },
+  "series": [
+    {
+      "expression": "df[\"typical_price\"].rolling(int(self.p(\"PullbackSignalPeriod\")), min_periods=2).min()",
+      "name": "lowest_typical"
+    },
+    {
+      "expression": "df[[\"low\", \"ha_open\", \"ha_close\"]].min(axis=1)",
+      "name": "ha_floor"
+    },
+    {
+      "expression": "df.index.to_series().dt.hour.astype(float)",
+      "name": "hour_ref"
+    },
+    {
+      "expression": "df[\"sma_fast\"].shift(3) > df[\"sma_fast\"].shift(3).rolling(int(self.p(\"SignalMAPeriod\")), min_periods=5).mean()",
+      "name": "long_signal"
+    },
+    {
+      "expression": "df[\"lwma_fast\"].shift(1) < df[\"lowest_typical\"].shift(3)",
+      "name": "short_signal"
+    }
+  ],
+  "symbol": "XAUUSD",
+  "timeframe": "H1"
+}

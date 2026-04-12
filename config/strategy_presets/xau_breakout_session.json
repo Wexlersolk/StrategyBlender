@@ -1,0 +1,27 @@
+{
+  "label": "XAU Breakout Session",
+  "description": "Native XAUUSD breakout preset with ATR entry buffer, BB-width volatility filter, and London/NY session gating.",
+  "template": "xau_breakout_session",
+  "payload": {
+    "name": "XAU Breakout Session",
+    "symbol": "XAUUSD",
+    "timeframe": "H1",
+    "params": {
+      "HighestPeriod": 24,
+      "LowestPeriod": 24,
+      "ATRPeriod": 14,
+      "BBWRPeriod": 24,
+      "BBWRMin": 0.015,
+      "EntryBufferATR": 0.15,
+      "mmLots": 1.0,
+      "StopLossATR": 1.4,
+      "ProfitTargetATR": 2.8,
+      "MaxDistancePct": 3.5,
+      "SignalTimeRangeFrom": "06:00",
+      "SignalTimeRangeTo": "18:00",
+      "ExitAfterBars": 18
+    },
+    "min_bars": 30,
+    "lot_value": 100.0
+  }
+}

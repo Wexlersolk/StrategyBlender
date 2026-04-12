@@ -43,6 +43,8 @@ class PendingOrder:
     take_profit: float
     lots:        float
     opened_bar:  int            # bar index when order was placed
+    opened_time: pd.Timestamp
+    first_eligible_time: pd.Timestamp | None = None
     expiry_bars: int  = 1       # cancel after N bars (0 = GTC)
     comment:     str  = ""
     decision_id: int  = 0
